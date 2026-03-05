@@ -1,0 +1,132 @@
+/* Header sits fixed at top with left offset for sidebar */
+.header {
+  margin-left: 240px;
+  height: 60px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 1px solid #eee;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.header-right .icon {
+  font-size: 1rem;
+  color: #555;
+  margin: 0 10px;
+  cursor: pointer;
+}
+
+.header-right .notification {
+  position: relative;
+}
+
+.header-right .badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff4d4f;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  padding: 2px 5px;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  margin-left: 15px;
+}
+
+.profile .avatar {
+  border-radius: 50%;
+}
+
+.profile .name {
+  margin-left: 8px;
+  font-size: 0.9rem;
+  color: #333;
+}
+.header {.header {
+
+
+
+
+.header {
+  margin-left: 240px;
+  height: 60px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 1px solid #eee;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.header-right .icon {
+  font-size: 1rem;
+  color: #555;
+  margin: 0 10px;
+  cursor: pointer;
+}
+
+.header-right .notification {
+  position: relative;
+}
+
+.header-right .badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff4d4f;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  padding: 2px 5px;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  margin-left: 15px;
+}
+
+.profile .avatar {
+  border-radius: 50%;
+}
+
+.profile .name {
+  margin-left: 8px;
+  font-size: 0.9rem;
+  color: #333;
+}

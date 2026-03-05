@@ -1,0 +1,550 @@
+.library-root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.library-header {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.library-header h2 {
+  margin: 0;
+  color: #1d2939;
+}
+
+.header-controls select,
+.filters-row select,
+.filters-row input {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.88rem;
+}
+
+.tabs-row {
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tabs-row button {
+  border: 1px solid #d0d5dd;
+  background: #f9fafb;
+  color: #344054;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.86rem;
+}
+
+.tabs-row button.active {
+  background: #1570ef;
+  border-color: #1570ef;
+  color: #fff;
+}
+
+.tabs-row span {
+  margin-left: auto;
+  color: #475467;
+  font-size: 0.86rem;
+  padding-right: 6px;
+}
+
+.filters-row {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1.4fr repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.library-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.library-stats div {
+  background: #fff;
+  border-radius: 10px;
+  padding: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.library-stats strong {
+  font-size: 1.15rem;
+  color: #101828;
+}
+
+.library-stats span {
+  color: #667085;
+  font-size: 0.82rem;
+}
+
+.library-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.section-title-row h3 {
+  margin: 0;
+  color: #1d2939;
+}
+
+.ghost-btn,
+.primary-btn,
+.secondary-btn {
+  border: none;
+  border-radius: 7px;
+  padding: 7px 11px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.ghost-btn {
+  background: #eef2f6;
+  color: #344054;
+}
+
+.ghost-btn:hover,
+.secondary-btn:hover {
+  background: #e4e7ec;
+}
+
+.primary-btn {
+  background: #1570ef;
+  color: #fff;
+}
+
+.primary-btn:hover {
+  background: #175cd3;
+}
+
+.primary-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.secondary-btn {
+  background: #eef2f6;
+  color: #344054;
+}
+
+.books-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.book-card {
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 94px 1fr;
+  background: #fcfcfd;
+}
+
+.book-card img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.book-info {
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.book-info h4 {
+  margin: 0;
+  color: #1d2939;
+  font-size: 0.95rem;
+}
+
+.book-info p {
+  margin: 0;
+  color: #667085;
+  font-size: 0.82rem;
+}
+
+.availability-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #475467;
+  font-size: 0.79rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.active {
+  background: #16a34a;
+}
+
+.status-dot.inactive {
+  background: #dc2626;
+}
+
+.borrowed-table-wrap {
+  overflow-x: auto;
+}
+
+.borrowed-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 860px;
+}
+
+.borrowed-table-wrap th,
+.borrowed-table-wrap td {
+  border-bottom: 1px solid #eaecf0;
+  padding: 9px;
+  text-align: left;
+  vertical-align: top;
+  font-size: 0.84rem;
+}
+
+.borrowed-table-wrap thead {
+  background: #f9fafb;
+}
+
+.date-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-pill {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 0.76rem;
+}
+
+.status-pill.active {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.status-pill.soon {
+  background: #fffaeb;
+  color: #b54708;
+}
+
+.status-pill.overdue {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.table-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.reservation-form {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(2, minmax(0, 1fr)) auto;
+  gap: 8px;
+  margin-bottom: 10px;
+  align-items: end;
+}
+
+.reservation-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #344054;
+  font-size: 0.81rem;
+  font-weight: 600;
+}
+
+.reservation-form select,
+.reservation-form input {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.86rem;
+}
+
+.history-panel {
+  margin-top: 12px;
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  padding: 10px;
+  background: #f9fafb;
+}
+
+.history-panel h4 {
+  margin: 0 0 8px;
+}
+
+.history-panel p {
+  margin: 0;
+  color: #667085;
+  font-size: 0.84rem;
+}
+
+.history-panel ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.history-panel li {
+  background: #fff;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.history-panel li strong {
+  color: #1d2939;
+  font-size: 0.82rem;
+}
+
+.history-panel li span {
+  color: #475467;
+  font-size: 0.82rem;
+}
+
+.history-panel li small {
+  color: #667085;
+  font-size: 0.75rem;
+}
+
+.empty-state {
+  margin: 8px 0 0;
+  color: #667085;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  z-index: 1200;
+}
+
+.library-modal {
+  width: min(480px, 100%);
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 18px 38px rgba(16, 24, 40, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.library-modal h3 {
+  margin: 0;
+  color: #101828;
+}
+
+.library-modal p {
+  margin: 0;
+  color: #667085;
+  font-size: 0.88rem;
+}
+
+.borrow-book-preview {
+  border: 1px solid #eaecf0;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.borrow-book-preview strong {
+  color: #1d2939;
+}
+
+.borrow-book-preview span {
+  color: #667085;
+  font-size: 0.82rem;
+}
+
+.borrow-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.borrow-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #344054;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.borrow-form-grid input {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 8px 9px;
+  font-size: 0.86rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.receipt-modal {
+  width: min(620px, 100%);
+}
+
+.receipt-details {
+  border: 1px solid #dbe3f0;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f5f8fd 100%);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.receipt-details span {
+  color: #344054;
+  font-size: 0.84rem;
+}
+
+.receipt-brand-row,
+.receipt-teacher-row {
+  border: 1px solid #dbe3f0;
+  border-radius: 8px;
+  background: #fff;
+  padding: 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.receipt-brand-row strong,
+.receipt-teacher-row strong {
+  color: #1d2939;
+  display: block;
+  font-size: 0.86rem;
+}
+
+.receipt-brand-row p,
+.receipt-teacher-row p {
+  margin: 2px 0 0;
+  color: #667085;
+  font-size: 0.76rem;
+}
+
+.school-logo {
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  background: #eef4ff;
+}
+
+.teacher-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #d0d5dd;
+}
+
+.receipt-details > span {
+  background: #fff;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+@media (max-width: 1100px) {
+  .books-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .library-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .tabs-row span {
+    margin-left: 0;
+  }
+
+  .filters-row {
+    grid-template-columns: 1fr;
+  }
+
+  .reservation-form {
+    grid-template-columns: 1fr;
+  }
+
+  .library-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .books-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .book-card {
+    grid-template-columns: 86px 1fr;
+  }
+
+  .table-actions {
+    flex-direction: column;
+  }
+
+  .borrow-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,19 @@
+/* simple list styles for placeholder/detail pages */
+.simple-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.list-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.list-item .time {
+  font-size: 0.85rem;
+  color: #888;
+}

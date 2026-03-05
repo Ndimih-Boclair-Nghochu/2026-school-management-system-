@@ -1,0 +1,266 @@
+.exam-detail-root {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.exam-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.exam-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.exam-icon {
+  font-size: 2.4rem;
+  background: #fff3cd;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.exam-meta {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.exam-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.back-link {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.back-link:hover {
+  background: #e8e8e8;
+}
+
+.save-btn {
+  background: #4caf50;
+  color: #fff;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.save-btn:hover {
+  background: #45a049;
+}
+
+.exam-subject-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  flex-wrap: wrap;
+}
+
+.exam-subject-section label {
+  font-weight: 600;
+  color: #333;
+}
+
+.subject-dropdown {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: #fff;
+}
+
+/* Responsive design for small screens */
+@media (max-width: 768px) {
+  .exam-subject-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .exam-subject-section label {
+    margin-left: 0 !important;
+  }
+
+  .subject-dropdown {
+    width: 100%;
+  }
+}
+
+.exam-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.exam-date {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.exam-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 0.9rem;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stat strong {
+  background: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.exam-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+  background: #fff;
+}
+
+.exam-table th, .exam-table td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.exam-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.exam-table td.center {
+  text-align: center;
+}
+
+.name-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  background: #bbb;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+}
+
+.student-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.student-id {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+.marks-input, .remarks-input {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.marks-input {
+  max-width: 70px;
+  text-align: center;
+}
+
+.remarks-input {
+  max-width: 150px;
+}
+
+.grade-select {
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: #fff;
+}
+
+.exam-footer {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Show pagination only on mobile/small screens */
+@media (max-width: 768px) {
+  .exam-footer {
+    display: flex;
+  }
+}
+
+.exam-pagination {
+  display: flex;
+  gap: 4px;
+}
+
+.exam-pagination .nav-btn {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.exam-pagination .nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.exam-pagination .page {
+  background: #fff;
+  border: 1px solid #ddd;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.exam-pagination .active {
+  background: #4caf50;
+  color: #fff;
+  border-color: #4caf50;
+}
