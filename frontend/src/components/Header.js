@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { FaSearch, FaBell, FaBars } from 'react-icons/fa';
 import './HeaderClean.css';
 
@@ -7,27 +7,15 @@ const SCHOOL_LOGO = `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="h
 
 const Header = ({
   onToggleMenu,
+  onLogout = () => {},
+  profile,
   notificationCount = 0,
   notifications = [],
   onNotificationSelect = () => {},
   onMarkAllNotificationsRead = () => {},
   onViewAllNotifications = () => {}
 }) => {
-  const [avatar, setAvatar] = useState('https://via.placeholder.com/32');
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const fileInput = useRef(null);
-
-  const handleAvatarClick = () => {
-    if (fileInput.current) fileInput.current.click();
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setAvatar(url);
-    }
-  };
 
   return (
     <header className="header">
@@ -90,21 +78,15 @@ const Header = ({
             </div>
           )}
         </div>
-        <div className="profile" onClick={handleAvatarClick} style={{ cursor: 'pointer' }}>
+        <div className="profile">
           <img
-            src={avatar}
+            src={profile?.avatar || 'https://via.placeholder.com/32'}
             alt="Profile"
             className="avatar"
           />
-          <span className="name">John Smith</span>
+          <span className="name">{profile?.name || 'Teacher'}</span>
         </div>
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInput}
-          style={{ display: 'none' }}
-          onChange={handleFileChange}
-        />
+        <button type="button" className="logout-btn" onClick={onLogout}>Logout</button>
       </div>
     </header>
   );

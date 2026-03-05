@@ -5,6 +5,7 @@ import MyClasses from './MyClasses';
 import ClassAttendance from './ClassAttendance';
 import Attendance from './Attendance';
 import Exams from './Exams';
+import OnlineExam from './OnlineExam';
 import Assignments from './Assignments';
 import OnlineClasses from './OnlineClasses';
 import Materials from './Materials';
@@ -12,10 +13,11 @@ import Library from './Library';
 import Messages from './Messages';
 import Calendar from './Calendar';
 import Announcements from './Announcements';
+import EditProfile from './EditProfile';
 import { FaThList, FaPen, FaCalendarAlt, FaEnvelope } from 'react-icons/fa';
 import './TeacherDashboard.css';
 
-const TeacherDashboard = () => {
+const TeacherDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {} }) => {
   const initialAnnouncements = [
     {
       id: 1,
@@ -174,6 +176,8 @@ const TeacherDashboard = () => {
         return <Attendance />;
       case 'exams':
         return <Exams />;
+      case 'online-exam':
+        return <OnlineExam />;
       case 'assignments':
         return <Assignments />;
       case 'online-classes':
@@ -203,6 +207,8 @@ const TeacherDashboard = () => {
             onDeleteAnnouncement={deleteAnnouncement}
           />
         );
+      case 'edit-profile':
+        return <EditProfile profile={profile} onSaveProfile={onSaveProfile} />;
       default:
         // dashboard view (existing content)
         return (
@@ -385,6 +391,7 @@ const TeacherDashboard = () => {
     'class-attendance': selectedClass ? `${selectedClass.sub} - Attendance` : 'Class Attendance',
     'attendance': 'Attendance',
     'exams': 'Exams',
+    'online-exam': 'Online Exam',
     'assignments': 'Assignments',
     'online-classes': 'Online Classes',
     'materials': 'Materials',
@@ -408,6 +415,8 @@ const TeacherDashboard = () => {
       <Header
         title={titleMap[activeView] || 'Dashboard'}
         onToggleMenu={() => setSidebarOpen(s => !s)}
+        onLogout={onLogout}
+        profile={profile}
         notificationCount={unreadNotificationCount}
         notifications={notificationItems}
         onNotificationSelect={handleNotificationSelect}

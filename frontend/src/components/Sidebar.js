@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaTachometerAlt, FaChalkboardTeacher, FaClipboardList, FaFileAlt, FaVideo, FaBook, FaBookOpen, FaEnvelope, FaCalendarAlt, FaBullhorn } from 'react-icons/fa';
+import { FaTachometerAlt, FaChalkboardTeacher, FaClipboardList, FaFileAlt, FaVideo, FaBook, FaBookOpen, FaEnvelope, FaCalendarAlt, FaBullhorn, FaLaptopCode, FaUserEdit } from 'react-icons/fa';
 import './Sidebar.css';
 
 const SCHOOL_NAME = 'EduIgnite School';
@@ -44,6 +44,12 @@ const Sidebar = ({ active = 'dashboard', onSelect = () => {}, onClose = () => {}
             <FaFileAlt /> <span>Exams</span>
           </li>
           <li
+            className={active === 'online-exam' ? 'active' : ''}
+            onClick={() => handleClick('online-exam')}
+          >
+            <FaLaptopCode /> <span>Online Exam</span>
+          </li>
+          <li
             className={active === 'assignments' ? 'active' : ''}
             onClick={() => handleClick('assignments')}
           >
@@ -84,6 +90,12 @@ const Sidebar = ({ active = 'dashboard', onSelect = () => {}, onClose = () => {}
             onClick={() => handleClick('calendar')}
           >
             <FaCalendarAlt /> <span>Calendar</span>
+          </li>
+          <li
+            className={active === 'edit-profile' ? 'active' : ''}
+            onClick={() => handleClick('edit-profile')}
+          >
+            <FaUserEdit /> <span>Edit Profile</span>
           </li>
         </ul>
       </nav>

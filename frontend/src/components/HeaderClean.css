@@ -213,6 +213,22 @@
   color: #333;
 }
 
+.logout-btn {
+  margin-left: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #fef3f2;
+  color: #b42318;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #fee4e2;
+}
+
 /* responsive header adjustments */
 @media (max-width: 1024px) {
   .header {
@@ -263,6 +279,12 @@
     display: none;
   }
 
+  .logout-btn {
+    padding: 7px 10px;
+    font-size: 0.78rem;
+    margin-left: 6px;
+  }
+
   .profile .avatar {
     width: 32px;
     height: 32px;
@@ -289,6 +311,11 @@
 
   .header-right .icon {
     margin: 0 6px;
+  }
+
+  .logout-btn {
+    font-size: 0.74rem;
+    padding: 6px 8px;
   }
 
   .notification-menu {
