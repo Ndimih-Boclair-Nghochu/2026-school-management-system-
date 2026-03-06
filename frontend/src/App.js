@@ -4,6 +4,7 @@ import TeacherDashboard from './components/TeacherDashboard';
 import StudentDashboard from './components/StudentDashboard';
 import LibrarianDashboard from './components/LibrarianDashboard';
 import LoginPage from './components/LoginPage';
+import SchoolLanding from './components/SchoolLanding';
 
 const DEMO_TEACHER = {
   matricule: 'TCH2026',
@@ -25,6 +26,7 @@ const DEMO_LIBRARIAN = {
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showLandingPage, setShowLandingPage] = useState(false);
   const [activeRole, setActiveRole] = useState('teacher');
   const [recoveryOtps, setRecoveryOtps] = useState({});
   const [accounts, setAccounts] = useState([
@@ -73,6 +75,7 @@ function App() {
       setUserProfile(matchedAccount);
       setActiveRole(matchedAccount.role || 'teacher');
       setIsAuthenticated(true);
+      setShowLandingPage(true);
       return true;
     }
 
@@ -167,12 +170,29 @@ function App() {
     );
   }
 
+  if (showLandingPage) {
+    return (
+      <SchoolLanding
+        profile={userProfile}
+        role={activeRole}
+        onOpenDashboard={() => setShowLandingPage(false)}
+        onLogout={() => {
+          setShowLandingPage(false);
+          setIsAuthenticated(false);
+        }}
+      />
+    );
+  }
+
   if (activeRole === 'student') {
     return (
       <StudentDashboard
         profile={userProfile}
         onSaveProfile={handleSaveProfile}
-        onLogout={() => setIsAuthenticated(false)}
+        onLogout={() => {
+          setShowLandingPage(false);
+          setIsAuthenticated(false);
+        }}
       />
     );
   }
@@ -182,7 +202,10 @@ function App() {
       <LibrarianDashboard
         profile={userProfile}
         onSaveProfile={handleSaveProfile}
-        onLogout={() => setIsAuthenticated(false)}
+        onLogout={() => {
+          setShowLandingPage(false);
+          setIsAuthenticated(false);
+        }}
       />
     );
   }
@@ -191,7 +214,10 @@ function App() {
     <TeacherDashboard
       profile={userProfile}
       onSaveProfile={handleSaveProfile}
-      onLogout={() => setIsAuthenticated(false)}
+      onLogout={() => {
+        setShowLandingPage(false);
+        setIsAuthenticated(false);
+      }}
     />
   );
 }
