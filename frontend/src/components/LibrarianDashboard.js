@@ -8,7 +8,12 @@ import {
   FaUsers,
   FaChartLine,
   FaClock,
-  FaCheckCircle
+  FaCheckCircle,
+  FaFileCsv,
+  FaPrint,
+  FaShieldAlt,
+  FaBell,
+  FaEnvelope
 } from 'react-icons/fa';
 import Header from './Header';
 import LibrarianSidebar from './LibrarianSidebar';
@@ -16,6 +21,20 @@ import EditProfile from './EditProfile';
 import './LibrarianDashboard.css';
 
 const buildAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2f6feb&color=fff&bold=true`;
+
+const DEFAULT_LIBRARY_SETTINGS = {
+  borrowingDays: '14',
+  maxBooks: '5',
+  graceDays: '2',
+  reminderFrequency: 'Daily',
+  reminderChannel: 'SMS + Email',
+  autoSuspendOverdue: true,
+  weekendIssue: false,
+  requireApproval: true,
+  smsProvider: 'Twilio',
+  emailSender: 'library@eduignite.edu',
+  autoReport: 'Weekly'
+};
 
 const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {} }) => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -65,19 +84,11 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
   const [reportPeriod, setReportPeriod] = useState('This Term');
   const [reportType, setReportType] = useState('All');
   const [reportSortBy, setReportSortBy] = useState('dueDate');
-  const [settingsDraft, setSettingsDraft] = useState({
-    borrowingDays: '14',
-    maxBooks: '5',
-    graceDays: '2',
-    reminderFrequency: 'Daily',
-    reminderChannel: 'SMS + Email',
-    autoSuspendOverdue: true,
-    weekendIssue: false,
-    requireApproval: true,
-    smsProvider: 'Twilio',
-    emailSender: 'library@eduignite.edu',
-    autoReport: 'Weekly'
-  });
+  const [reportSearch, setReportSearch] = useState('');
+  const [settingsDraft, setSettingsDraft] = useState({ ...DEFAULT_LIBRARY_SETTINGS });
+  const [savedSettingsSnapshot, setSavedSettingsSnapshot] = useState({ ...DEFAULT_LIBRARY_SETTINGS });
+  const [settingsErrors, setSettingsErrors] = useState({});
+  const [settingsLastSavedAt, setSettingsLastSavedAt] = useState('Not saved yet');
   const [issueDraft, setIssueDraft] = useState({
     memberId: '1',
     bookId: '1',
@@ -456,22 +467,27 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
     period: new Date(row.issuedDate).getMonth() < 6 ? 'This Term' : 'Last Term'
   })), [returnRecords]);
 
-  const filteredReportRows = useMemo(() => reportRows
-    .filter((row) => {
-      const periodMatch = reportPeriod === 'All Periods' ? true : row.period === reportPeriod;
-      const typeMatch = reportType === 'All'
-        ? true
-        : reportType === 'Overdue Only'
-          ? row.status === 'Overdue'
-          : row.status === 'Active';
-      return periodMatch && typeMatch;
-    })
-    .sort((left, right) => {
-      if (reportSortBy === 'member') return left.member.localeCompare(right.member);
-      if (reportSortBy === 'book') return left.book.localeCompare(right.book);
-      if (reportSortBy === 'status') return left.status.localeCompare(right.status);
-      return new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime();
-    }), [reportRows, reportPeriod, reportType, reportSortBy]);
+  const filteredReportRows = useMemo(() => {
+    const query = reportSearch.trim().toLowerCase();
+
+    return reportRows
+      .filter((row) => {
+        const periodMatch = reportPeriod === 'All Periods' ? true : row.period === reportPeriod;
+        const typeMatch = reportType === 'All'
+          ? true
+          : reportType === 'Overdue Only'
+            ? row.status === 'Overdue'
+            : row.status === 'Active';
+        const queryMatch = !query || `${row.member} ${row.book} ${row.bookCode} ${row.category}`.toLowerCase().includes(query);
+        return periodMatch && typeMatch && queryMatch;
+      })
+      .sort((left, right) => {
+        if (reportSortBy === 'member') return left.member.localeCompare(right.member);
+        if (reportSortBy === 'book') return left.book.localeCompare(right.book);
+        if (reportSortBy === 'status') return left.status.localeCompare(right.status);
+        return new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime();
+      });
+  }, [reportRows, reportPeriod, reportType, reportSortBy, reportSearch]);
 
   const reportSummary = useMemo(() => ({
     total: filteredReportRows.length,
@@ -499,6 +515,25 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
       .sort((left, right) => right.value - left.value)
       .slice(0, 5);
   }, [filteredReportRows]);
+
+  const reportTopOverdueMember = useMemo(() => {
+    const overdueCounts = filteredReportRows
+      .filter((row) => row.status === 'Overdue')
+      .reduce((accumulator, row) => {
+        accumulator[row.member] = (accumulator[row.member] || 0) + 1;
+        return accumulator;
+      }, {});
+
+    const [member, count] = Object.entries(overdueCounts).sort((left, right) => right[1] - left[1])[0] || [];
+    return member ? { member, count } : null;
+  }, [filteredReportRows]);
+
+  const reportTopCategory = reportCategoryChartData[0] || null;
+
+  const hasUnsavedSettings = useMemo(
+    () => JSON.stringify(settingsDraft) !== JSON.stringify(savedSettingsSnapshot),
+    [settingsDraft, savedSettingsSnapshot]
+  );
 
   const selectedIssueMember = members.find((member) => String(member.id) === issueDraft.memberId) || members[0];
   const selectedIssueBook = booksCatalog.find((book) => String(book.id) === issueDraft.bookId) || booksCatalog[0];
@@ -592,6 +627,201 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
 
   const handleSettingsFieldChange = (field, value) => {
     setSettingsDraft((prev) => ({ ...prev, [field]: value }));
+    setSettingsErrors((prev) => ({ ...prev, [field]: '' }));
+  };
+
+  const validateSettingsDraft = () => {
+    const nextErrors = {};
+    const borrowingDays = Number(settingsDraft.borrowingDays);
+    const maxBooks = Number(settingsDraft.maxBooks);
+    const graceDays = Number(settingsDraft.graceDays);
+
+    if (!Number.isFinite(borrowingDays) || borrowingDays < 1 || borrowingDays > 60) {
+      nextErrors.borrowingDays = 'Borrowing period must be between 1 and 60 days.';
+    }
+    if (!Number.isFinite(maxBooks) || maxBooks < 1 || maxBooks > 20) {
+      nextErrors.maxBooks = 'Maximum books must be between 1 and 20.';
+    }
+    if (!Number.isFinite(graceDays) || graceDays < 0 || graceDays > 14) {
+      nextErrors.graceDays = 'Grace period must be between 0 and 14 days.';
+    }
+    if (!/^\S+@\S+\.\S+$/.test(settingsDraft.emailSender.trim())) {
+      nextErrors.emailSender = 'Enter a valid sender email address.';
+    }
+
+    return nextErrors;
+  };
+
+  const saveLibrarySettings = () => {
+    const nextErrors = validateSettingsDraft();
+    setSettingsErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length) {
+      setNotice('Please fix settings validation errors before saving.');
+      return;
+    }
+
+    setSavedSettingsSnapshot({ ...settingsDraft });
+    setSettingsLastSavedAt(new Date().toLocaleString());
+    setNotice('Library settings saved successfully.');
+  };
+
+  const revertLibrarySettings = () => {
+    setSettingsDraft({ ...savedSettingsSnapshot });
+    setSettingsErrors({});
+    setNotice('Settings reverted to last saved snapshot.');
+  };
+
+  const resetLibrarySettingsDefaults = () => {
+    setSettingsDraft({ ...DEFAULT_LIBRARY_SETTINGS });
+    setSettingsErrors({});
+    setNotice('Default library settings template loaded.');
+  };
+
+  const applySettingsPreset = (preset) => {
+    if (preset === 'strict') {
+      setSettingsDraft((prev) => ({
+        ...prev,
+        borrowingDays: '10',
+        maxBooks: '3',
+        graceDays: '0',
+        reminderFrequency: 'Daily',
+        reminderChannel: 'SMS + Email',
+        autoSuspendOverdue: true,
+        requireApproval: true
+      }));
+      setNotice('Strict policy preset applied. Review and save settings.');
+      return;
+    }
+
+    if (preset === 'balanced') {
+      setSettingsDraft((prev) => ({
+        ...prev,
+        borrowingDays: '14',
+        maxBooks: '5',
+        graceDays: '2',
+        reminderFrequency: 'Daily',
+        reminderChannel: 'SMS + Email',
+        autoSuspendOverdue: true,
+        requireApproval: true
+      }));
+      setNotice('Balanced policy preset applied.');
+      return;
+    }
+
+    setSettingsDraft((prev) => ({
+      ...prev,
+      borrowingDays: '21',
+      maxBooks: '7',
+      graceDays: '4',
+      reminderFrequency: 'Every 2 days',
+      reminderChannel: 'Email',
+      autoSuspendOverdue: false,
+      requireApproval: false
+    }));
+    setNotice('Extended access preset applied.');
+  };
+
+  const exportLibrarianReportCsv = () => {
+    if (!filteredReportRows.length) {
+      setNotice('No report rows available for CSV export with the current filters.');
+      return;
+    }
+
+    const header = ['Member', 'Book', 'Code', 'Category', 'Issued', 'Due', 'Status', 'OverdueDays'];
+    const rows = filteredReportRows.map((row) => [
+      row.member,
+      row.book,
+      row.bookCode,
+      row.category,
+      row.issuedDate,
+      row.dueDate,
+      row.status,
+      row.overdueDays
+    ]);
+
+    const csvContent = [header, ...rows]
+      .map((csvRow) => csvRow.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `library-report-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+
+    setNotice('CSV report exported successfully.');
+  };
+
+  const printReportSnapshot = () => {
+    if (!filteredReportRows.length) {
+      setNotice('No rows available to print with the current filters.');
+      return;
+    }
+
+    const printWindow = window.open('', '_blank', 'width=960,height=700');
+    if (!printWindow) {
+      setNotice('Unable to open print preview window. Please allow popups.');
+      return;
+    }
+
+    const tableRowsHtml = filteredReportRows
+      .map((row) => `
+        <tr>
+          <td>${row.member}</td>
+          <td>${row.book}</td>
+          <td>${row.bookCode}</td>
+          <td>${row.category}</td>
+          <td>${row.issuedDate}</td>
+          <td>${row.dueDate}</td>
+          <td>${row.status}</td>
+          <td>${row.overdueDays}</td>
+        </tr>
+      `)
+      .join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Library Report Snapshot</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 18px; color: #111827; }
+            h1 { margin: 0 0 6px; font-size: 22px; }
+            p { margin: 0 0 16px; color: #475467; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #d0d5dd; padding: 8px; font-size: 12px; text-align: left; }
+            th { background: #f2f4f7; }
+          </style>
+        </head>
+        <body>
+          <h1>Library Report Snapshot</h1>
+          <p>Period: ${reportPeriod} • Type: ${reportType} • Generated: ${new Date().toLocaleString()}</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Book</th>
+                <th>Code</th>
+                <th>Category</th>
+                <th>Issued</th>
+                <th>Due</th>
+                <th>Status</th>
+                <th>Overdue Days</th>
+              </tr>
+            </thead>
+            <tbody>${tableRowsHtml}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+
+    setNotice('Print snapshot generated.');
   };
 
   const exportLibrarianReportPdf = (reportScope = 'full') => {
@@ -1935,6 +2165,11 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
               </div>
 
               <div className="reports-tools">
+                <input
+                  value={reportSearch}
+                  onChange={(event) => setReportSearch(event.target.value)}
+                  placeholder="Search member, book, code, or category"
+                />
                 <select value={reportPeriod} onChange={(event) => setReportPeriod(event.target.value)}>
                   <option>This Term</option>
                   <option>Last Term</option>
@@ -1951,6 +2186,39 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
                   <option value="book">Sort: Book</option>
                   <option value="status">Sort: Status</option>
                 </select>
+                <button type="button" className="secondary" onClick={exportLibrarianReportCsv}><FaFileCsv /> Export CSV</button>
+                <button type="button" className="secondary" onClick={printReportSnapshot}><FaPrint /> Print Snapshot</button>
+              </div>
+            </section>
+
+            <section className="librarian-panel report-insights-panel">
+              <div className="librarian-panel-head">
+                <h3>Report Insights</h3>
+              </div>
+              <div className="report-insights-grid">
+                <article className="report-insight-card">
+                  <h4>Top Category in Scope</h4>
+                  <p>{reportTopCategory ? `${reportTopCategory.label} (${reportTopCategory.value})` : 'No category data available'}</p>
+                </article>
+                <article className="report-insight-card">
+                  <h4>Highest Overdue Member</h4>
+                  <p>{reportTopOverdueMember ? `${reportTopOverdueMember.member} (${reportTopOverdueMember.count})` : 'No overdue rows in current filter'}</p>
+                </article>
+                <article className="report-insight-card">
+                  <h4>Search Scope</h4>
+                  <p>{reportSearch.trim() ? `Filtered by: "${reportSearch.trim()}"` : 'No text search applied'}</p>
+                </article>
+              </div>
+              <div className="report-category-bars">
+                {reportCategoryChartData.length > 0 ? reportCategoryChartData.map((item) => (
+                  <div key={item.label} className="report-category-row">
+                    <span>{item.label}</span>
+                    <div>
+                      <i style={{ width: `${Math.max(8, (item.value / Math.max(...reportCategoryChartData.map((entry) => entry.value))) * 100)}%` }} />
+                      <strong>{item.value}</strong>
+                    </div>
+                  </div>
+                )) : <p className="librarian-note">No category insights available for this filter.</p>}
               </div>
             </section>
 
@@ -2038,6 +2306,16 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
 
               <div className="settings-sections-grid">
                 <article className="settings-box">
+                  <h3>Policy Templates</h3>
+                  <div className="settings-template-actions">
+                    <button type="button" className="secondary" onClick={() => applySettingsPreset('strict')}>Strict</button>
+                    <button type="button" className="secondary" onClick={() => applySettingsPreset('balanced')}>Balanced</button>
+                    <button type="button" className="secondary" onClick={() => applySettingsPreset('extended')}>Extended Access</button>
+                  </div>
+                  <p className="librarian-note">Select a template, review fields below, then save your policy.</p>
+                </article>
+
+                <article className="settings-box">
                   <h3>Borrowing Policy</h3>
                   <div className="librarian-form-grid">
                     <label>
@@ -2048,6 +2326,7 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
                         value={settingsDraft.borrowingDays}
                         onChange={(event) => handleSettingsFieldChange('borrowingDays', event.target.value)}
                       />
+                      {settingsErrors.borrowingDays && <small className="settings-error">{settingsErrors.borrowingDays}</small>}
                     </label>
                     <label>
                       Maximum Books Per Member
@@ -2057,6 +2336,7 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
                         value={settingsDraft.maxBooks}
                         onChange={(event) => handleSettingsFieldChange('maxBooks', event.target.value)}
                       />
+                      {settingsErrors.maxBooks && <small className="settings-error">{settingsErrors.maxBooks}</small>}
                     </label>
                     <label>
                       Grace Period (days)
@@ -2066,6 +2346,7 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
                         value={settingsDraft.graceDays}
                         onChange={(event) => handleSettingsFieldChange('graceDays', event.target.value)}
                       />
+                      {settingsErrors.graceDays && <small className="settings-error">{settingsErrors.graceDays}</small>}
                     </label>
                     <label>
                       Weekend Issue
@@ -2148,6 +2429,7 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
                         value={settingsDraft.emailSender}
                         onChange={(event) => handleSettingsFieldChange('emailSender', event.target.value)}
                       />
+                      {settingsErrors.emailSender && <small className="settings-error">{settingsErrors.emailSender}</small>}
                     </label>
                     <label>
                       Automated Report Schedule
@@ -2166,18 +2448,75 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
                     </label>
                   </div>
                 </article>
+
+                <article className="settings-box full-width settings-health-box">
+                  <h3>Configuration Health</h3>
+                  <div className="settings-health-grid">
+                    <div>
+                      <FaShieldAlt />
+                      <p>{settingsDraft.autoSuspendOverdue ? 'Auto-suspension is enabled for overdue control.' : 'Auto-suspension is disabled.'}</p>
+                    </div>
+                    <div>
+                      <FaBell />
+                      <p>Reminder schedule: {settingsDraft.reminderFrequency} via {settingsDraft.reminderChannel}.</p>
+                    </div>
+                    <div>
+                      <FaEnvelope />
+                      <p>Sender identity: {settingsDraft.emailSender}.</p>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <div className={`settings-save-status ${hasUnsavedSettings ? 'pending' : 'synced'}`}>
+                {hasUnsavedSettings ? 'Unsaved changes detected' : `All changes synced • ${settingsLastSavedAt}`}
               </div>
 
               <div className="librarian-form-actions">
-                <button type="button" className="primary" onClick={() => setNotice('Demo: Library settings saved successfully.')}>Save Settings</button>
-                <button type="button" className="secondary" onClick={() => setNotice('Demo: Settings reverted to last saved snapshot.')}>Revert</button>
+                <button type="button" className="primary" onClick={saveLibrarySettings}>Save Settings</button>
+                <button type="button" className="secondary" onClick={revertLibrarySettings}>Revert</button>
+                <button type="button" className="secondary" onClick={resetLibrarySettingsDefaults}>Load Defaults</button>
               </div>
               {notice && <p className="librarian-note">{notice}</p>}
             </section>
           </div>
         );
       case 'profile':
-        return <EditProfile profile={profileForEdit} onSaveProfile={onSaveProfile} />;
+        return (
+          <div className="librarian-profile-layout">
+            <section className="librarian-panel">
+              <div className="librarian-panel-head">
+                <div>
+                  <h2>Profile</h2>
+                  <p>Manage librarian identity, security, and account preferences.</p>
+                </div>
+              </div>
+              <EditProfile profile={profileForEdit} onSaveProfile={onSaveProfile} />
+            </section>
+
+            <section className="librarian-panel profile-side-panel">
+              <div className="librarian-panel-head">
+                <h3>Account Overview</h3>
+              </div>
+              <div className="profile-overview-card">
+                <img src={profile?.avatar || buildAvatar(profile?.name || 'Librarian')} alt="Librarian profile" />
+                <div>
+                  <h4>{profile?.name || 'Librarian'}</h4>
+                  <p>{profile?.matricule || 'LIB2026'} • Library Operations</p>
+                </div>
+              </div>
+              <div className="profile-status-list">
+                <p><FaShieldAlt /> Password protection enabled</p>
+                <p><FaBell /> Notification channel: {settingsDraft.reminderChannel}</p>
+                <p><FaEnvelope /> Contact sender: {settingsDraft.emailSender}</p>
+              </div>
+              <div className="librarian-form-actions profile-quick-actions">
+                <button type="button" className="secondary" onClick={() => setActiveView('settings')}>Open Security Settings</button>
+                <button type="button" className="secondary" onClick={() => setActiveView('reports')}>Go to Reports</button>
+              </div>
+            </section>
+          </div>
+        );
       default:
         return (
           <>

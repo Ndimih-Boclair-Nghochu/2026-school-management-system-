@@ -1,9 +1,28 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaSearch, FaBell, FaBars } from 'react-icons/fa';
 import './HeaderClean.css';
+import { useSchoolConfig } from './schoolConfig';
 
-const SCHOOL_NAME = 'EduIgnite International School';
-const SCHOOL_LOGO = `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="88" height="88" viewBox="0 0 88 88"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1b74d3" offset="0"/><stop stop-color="#2e90fa" offset="1"/></linearGradient></defs><rect width="88" height="88" rx="18" fill="url(#g)"/><circle cx="44" cy="44" r="22" fill="#fff" opacity="0.92"/><text x="44" y="50" text-anchor="middle" font-size="22" font-family="Arial" font-weight="700" fill="#1b74d3">EI</text></svg>')}`;
+const LANGUAGE_STORAGE_KEY = 'eduignite.language';
+
+const headerTexts = {
+  en: {
+    notifications: 'Notifications',
+    markAllRead: 'Mark all read',
+    noNotifications: 'No notifications',
+    viewAllAnnouncements: 'View all announcements',
+    logout: 'Logout',
+    languageToggle: 'FR'
+  },
+  fr: {
+    notifications: 'Notifications',
+    markAllRead: 'Tout marquer lu',
+    noNotifications: 'Aucune notification',
+    viewAllAnnouncements: 'Voir toutes les annonces',
+    logout: 'Déconnexion',
+    languageToggle: 'EN'
+  }
+};
 
 const Header = ({
   onToggleMenu,
@@ -15,7 +34,24 @@ const Header = ({
   onMarkAllNotificationsRead = () => {},
   onViewAllNotifications = () => {}
 }) => {
+  const schoolConfig = useSchoolConfig();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [language, setLanguage] = useState(() => {
+    if (typeof window === 'undefined') return 'en';
+    const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    return saved === 'fr' ? 'fr' : 'en';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    }
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = language;
+    }
+  }, [language]);
+
+  const text = headerTexts[language] || headerTexts.en;
 
   return (
     <header className="header">
@@ -24,18 +60,27 @@ const Header = ({
           <FaBars />
         </button>
         <div className="school-brand">
-          <img src={SCHOOL_LOGO} alt="School Logo" className="school-brand-logo" />
-          <h2>{SCHOOL_NAME}</h2>
+          <img src={schoolConfig.logoUrl} alt="School Logo" className="school-brand-logo" />
+          <h2>{schoolConfig.schoolName}</h2>
         </div>
       </div>
       <div className="header-right">
+        <button
+          type="button"
+          className="language-toggle"
+          onClick={() => setLanguage((prev) => (prev === 'en' ? 'fr' : 'en'))}
+          aria-label={language === 'en' ? 'Switch to French' : 'Passer en anglais'}
+          title={language === 'en' ? 'Switch to French' : 'Passer en anglais'}
+        >
+          {text.languageToggle}
+        </button>
         <FaSearch className="icon" />
         <div className="notification">
           <button
             type="button"
             className="notification-trigger"
             onClick={() => setIsNotificationOpen((prev) => !prev)}
-            aria-label="Notifications"
+            aria-label={text.notifications}
           >
             <FaBell className="icon" />
             {notificationCount > 0 && <span className="badge">{notificationCount}</span>}
@@ -44,11 +89,11 @@ const Header = ({
           {isNotificationOpen && (
             <div className="notification-menu">
               <div className="notification-menu-head">
-                <strong>Notifications</strong>
-                <button type="button" onClick={onMarkAllNotificationsRead}>Mark all read</button>
+                <strong>{text.notifications}</strong>
+                <button type="button" onClick={onMarkAllNotificationsRead}>{text.markAllRead}</button>
               </div>
               <ul>
-                {notifications.length === 0 && <li className="empty">No notifications</li>}
+                {notifications.length === 0 && <li className="empty">{text.noNotifications}</li>}
                 {notifications.slice(0, 5).map((item) => (
                   <li key={item.id}>
                     <button
@@ -73,7 +118,7 @@ const Header = ({
                   setIsNotificationOpen(false);
                 }}
               >
-                View all announcements
+                {text.viewAllAnnouncements}
               </button>
             </div>
           )}
@@ -86,7 +131,7 @@ const Header = ({
           />
           <span className="name">{profile?.name || 'Teacher'}</span>
         </div>
-        <button type="button" className="logout-btn" onClick={onLogout}>Logout</button>
+        <button type="button" className="logout-btn" onClick={onLogout}>{text.logout}</button>
       </div>
     </header>
   );

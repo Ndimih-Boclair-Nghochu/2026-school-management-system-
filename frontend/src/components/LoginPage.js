@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
-
-const SCHOOL_LOGO = '/assets/image.png';
+import { useSchoolConfig } from './schoolConfig';
 
 const CAMPUS_IMAGE = 'https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?auto=format&fit=crop&w=1200&q=80';
 
 const LoginPage = ({ onLogin, onCreateAccount, onStartPasswordRecovery, onVerifyRecoveryOtp, onResetPassword }) => {
+  const schoolConfig = useSchoolConfig();
   const [isCreateMode, setIsCreateMode] = useState(false);
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [forgotStep, setForgotStep] = useState('identify');
@@ -97,6 +97,27 @@ const LoginPage = ({ onLogin, onCreateAccount, onStartPasswordRecovery, onVerify
   const fillDemoLibrarianLogin = () => {
     setMatricule('LIB2026');
     setPassword('librarian123');
+    setError('');
+    setSuccess('');
+  };
+
+  const fillDemoParentLogin = () => {
+    setMatricule('PAR2026');
+    setPassword('parent123');
+    setError('');
+    setSuccess('');
+  };
+
+  const fillDemoAccountantLogin = () => {
+    setMatricule('ACC2026');
+    setPassword('accountant123');
+    setError('');
+    setSuccess('');
+  };
+
+  const fillDemoAdminLogin = () => {
+    setMatricule('ADM2026');
+    setPassword('admin123');
     setError('');
     setSuccess('');
   };
@@ -204,14 +225,17 @@ const LoginPage = ({ onLogin, onCreateAccount, onStartPasswordRecovery, onVerify
       }
 
       const created = onCreateAccount(id, pass);
-      if (!created) {
-        setError('This matricule already exists.');
+      const createSuccess = typeof created === 'object' ? Boolean(created?.success) : Boolean(created);
+      const createMessage = typeof created === 'object' ? created?.message : '';
+
+      if (!createSuccess) {
+        setError(createMessage || 'This matricule cannot be used to create an account.');
         setSuccess('');
         return;
       }
 
       switchToLoginMode();
-      setSuccess('Account created successfully. Please log in.');
+      setSuccess(createMessage || 'Account created successfully. Please log in.');
       return;
     }
 
@@ -237,9 +261,9 @@ const LoginPage = ({ onLogin, onCreateAccount, onStartPasswordRecovery, onVerify
 
         <div className="login-form-panel">
           <div className="login-brand">
-            <img src={SCHOOL_LOGO} alt="School logo" />
-            <h1>EduIgnite</h1>
-            <p>School Management System</p>
+            <img src={schoolConfig.logoUrl} alt="School logo" />
+            <h1>{schoolConfig.shortName}</h1>
+            <p>{schoolConfig.systemTitle}</p>
           </div>
 
           <div className="login-form-head">
@@ -434,11 +458,17 @@ const LoginPage = ({ onLogin, onCreateAccount, onStartPasswordRecovery, onVerify
             <span>Teacher • Matricule: TCH2026 • Password: demo1234 • Phone: 677000111</span>
             <span>Student • Matricule: STD2026 • Password: student123 • Phone: 677000222</span>
             <span>Librarian • Matricule: LIB2026 • Password: librarian123 • Phone: 677000333</span>
+            <span>Parent • Matricule: PAR2026 • Password: parent123 • Phone: 677000444</span>
+            <span>Accountant • Matricule: ACC2026 • Password: accountant123 • Phone: 677000555</span>
+            <span>Admin • Matricule: ADM2026 • Password: admin123 • Phone: 677000666</span>
             {!isCreateMode && !isForgotMode && (
               <div className="demo-login-actions">
                 <button type="button" onClick={fillDemoTeacherLogin}>Use Teacher Demo</button>
                 <button type="button" onClick={fillDemoStudentLogin}>Use Student Demo</button>
                 <button type="button" onClick={fillDemoLibrarianLogin}>Use Librarian Demo</button>
+                <button type="button" onClick={fillDemoParentLogin}>Use Parent Demo</button>
+                <button type="button" onClick={fillDemoAccountantLogin}>Use Accountant Demo</button>
+                <button type="button" onClick={fillDemoAdminLogin}>Use Admin Demo</button>
               </div>
             )}
           </div>

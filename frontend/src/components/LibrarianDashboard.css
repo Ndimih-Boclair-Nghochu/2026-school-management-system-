@@ -802,16 +802,98 @@
 }
 
 .reports-tools {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1.4fr repeat(3, minmax(0, 1fr)) auto auto;
 }
 
 .members-tools input,
 .members-tools select,
+.reports-tools input,
 .reports-tools select {
   border: 1px solid #d0d5dd;
   border-radius: 8px;
   padding: 9px 10px;
   font-size: 0.86rem;
+}
+
+.reports-tools .secondary {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 0.84rem;
+  cursor: pointer;
+  background: #eef2f6;
+  color: #344054;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.report-insights-panel {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.report-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.report-insight-card {
+  border: 1px solid #dbeafe;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.report-insight-card h4 {
+  margin: 0 0 6px;
+  color: #1d2939;
+  font-size: 0.88rem;
+}
+
+.report-insight-card p {
+  margin: 0;
+  color: #475467;
+  font-size: 0.82rem;
+}
+
+.report-category-bars {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.report-category-row {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.report-category-row span {
+  color: #344054;
+  font-size: 0.82rem;
+}
+
+.report-category-row div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.report-category-row i {
+  display: inline-block;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2e90fa, #1570ef);
+}
+
+.report-category-row strong {
+  color: #1d2939;
+  font-size: 0.82rem;
 }
 
 .members-cards-grid {
@@ -951,6 +1033,139 @@
   cursor: pointer;
   background: #eef2f6;
   color: #344054;
+}
+
+.settings-template-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-error {
+  color: #b42318;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.settings-health-box {
+  background: #fff;
+}
+
+.settings-health-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.settings-health-grid div {
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  padding: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #f9fafb;
+}
+
+.settings-health-grid svg {
+  color: #175cd3;
+  margin-top: 2px;
+}
+
+.settings-health-grid p {
+  margin: 0;
+  color: #475467;
+  font-size: 0.82rem;
+}
+
+.settings-save-status {
+  margin-top: 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.settings-save-status.pending {
+  background: #fff4e5;
+  color: #b54708;
+}
+
+.settings-save-status.synced {
+  background: #eff8ff;
+  color: #175cd3;
+}
+
+.librarian-profile-layout {
+  display: grid;
+  grid-template-columns: 1.4fr minmax(260px, 1fr);
+  gap: 14px;
+}
+
+.profile-side-panel {
+  height: fit-content;
+  position: sticky;
+  top: 76px;
+}
+
+.profile-overview-card {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+
+.profile-overview-card img {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+}
+
+.profile-overview-card h4 {
+  margin: 0;
+  color: #1d2939;
+  font-size: 0.96rem;
+}
+
+.profile-overview-card p {
+  margin: 4px 0 0;
+  color: #667085;
+  font-size: 0.82rem;
+}
+
+.profile-status-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profile-status-list p {
+  margin: 0;
+  border: 1px solid #eaecf0;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: #344054;
+  font-size: 0.82rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-status-list svg {
+  color: #175cd3;
+}
+
+.profile-quick-actions {
+  margin-top: 12px;
 }
 
 .dashboard-footer {
@@ -1103,6 +1318,22 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .report-insights-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-health-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .librarian-profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-side-panel {
+    position: static;
+  }
+
   .members-cards-grid {
     grid-template-columns: 1fr;
   }
@@ -1169,6 +1400,10 @@
   .overdue-tools,
   .members-tools,
   .reports-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .report-category-row {
     grid-template-columns: 1fr;
   }
 

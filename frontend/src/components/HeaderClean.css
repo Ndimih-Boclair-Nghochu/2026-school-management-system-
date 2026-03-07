@@ -65,6 +65,23 @@
   align-items: center;
 }
 
+.language-toggle {
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  color: #1d2939;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.language-toggle:hover {
+  background: #f5f9ff;
+  border-color: #b2ddff;
+}
+
 .header-right .icon {
   font-size: 1rem;
   color: #555;
@@ -268,6 +285,12 @@
     gap: 4px;
   }
 
+  .language-toggle {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    margin-right: 2px;
+  }
+
   .header-right .icon {
     margin: 0 8px;
     font-size: 1.1rem;
@@ -311,6 +334,11 @@
 
   .header-right .icon {
     margin: 0 6px;
+  }
+
+  .language-toggle {
+    padding: 4px 7px;
+    font-size: 0.7rem;
   }
 
   .logout-btn {

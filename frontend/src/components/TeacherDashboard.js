@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import MyClasses from './MyClasses';
@@ -16,8 +16,11 @@ import Announcements from './Announcements';
 import EditProfile from './EditProfile';
 import { FaThList, FaPen, FaCalendarAlt, FaEnvelope } from 'react-icons/fa';
 import './TeacherDashboard.css';
+import { getAcademicTermStructure, useSchoolConfig } from './schoolConfig';
 
 const TeacherDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {} }) => {
+  const schoolConfig = useSchoolConfig();
+  const academicStructure = useMemo(() => getAcademicTermStructure(schoolConfig), [schoolConfig]);
   const initialAnnouncements = [
     {
       id: 1,
@@ -49,11 +52,6 @@ const TeacherDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
   const [announcementMessage, setAnnouncementMessage] = useState('');
   const [activeAnnouncementId, setActiveAnnouncementId] = useState(null);
   const [readNotificationIds, setReadNotificationIds] = useState([]);
-  const [showSupportForm, setShowSupportForm] = useState(false);
-  const [supportPaymentMethod, setSupportPaymentMethod] = useState('Orange Money');
-  const [supportAmount, setSupportAmount] = useState('');
-  const [supporterNumber, setSupporterNumber] = useState('');
-  const [supportMessage, setSupportMessage] = useState('');
 
   const subjectPerformanceData = [
     { subject: 'Mathematics', average: 13.6 },
@@ -62,12 +60,21 @@ const TeacherDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
     { subject: 'History', average: 11.8 }
   ];
 
-  const sequenceTrendData = [
-    { label: 'Term 1 / Seq 1', value: 11.9 },
-    { label: 'Term 1 / Seq 2', value: 12.6 },
-    { label: 'Term 2 / Seq 1', value: 13.1 },
-    { label: 'Term 2 / Seq 2', value: 13.8 }
-  ];
+  const sequenceTrendData = useMemo(() => {
+    const defaults = [11.9, 12.6, 13.1, 13.8, 14.2, 13.5, 14.0, 14.4];
+    const rows = [];
+
+    academicStructure.forEach((term) => {
+      term.sequences.forEach((sequence) => {
+        rows.push({
+          label: `${term.name} / ${sequence.replace('Sequence ', 'Seq ')}`,
+          value: defaults[rows.length % defaults.length]
+        });
+      });
+    });
+
+    return rows.slice(0, 8);
+  }, [academicStructure]);
 
   const supportStudents = [
     { id: 1, name: 'Student 6', className: 'Grade 5', subject: 'English', score: 8.2 },
@@ -145,25 +152,6 @@ const TeacherDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
   const handleSidebarSelect = (viewKey) => {
     setActiveView(viewKey);
     setSidebarOpen(false);
-  };
-
-  const submitSupportForm = (event) => {
-    event.preventDefault();
-    const amount = supportAmount.trim();
-    const number = supporterNumber.trim();
-    const message = supportMessage.trim();
-
-    if (!amount || !number || !message) {
-      alert('Please enter amount, number and message.');
-      return;
-    }
-
-    alert(`Thank you for supporting with ${amount} via ${supportPaymentMethod}.`);
-    setSupportAmount('');
-    setSupporterNumber('');
-    setSupportMessage('');
-    setSupportPaymentMethod('Orange Money');
-    setShowSupportForm(false);
   };
 
   const renderMain = () => {
@@ -538,61 +526,13 @@ const TeacherDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
         >
           Learn how to use your dashboard
         </a>
-        <button type="button" onClick={() => setShowSupportForm(true)}>Support</button>
+        <button
+          type="button"
+          onClick={() => window.open('mailto:support@eduignite.edu?subject=Teacher%20Dashboard%20Support', '_blank')}
+        >
+          Support
+        </button>
       </footer>
-
-      {showSupportForm && (
-        <div className="support-modal-overlay" role="dialog" aria-modal="true">
-          <div className="support-modal">
-            <h3>Support</h3>
-            <p>
-              Thank you for using this system. Your support helps us maintain and improve the dashboard with better features and faster updates.
-            </p>
-            <form onSubmit={submitSupportForm}>
-              <label>
-                Payment Method
-                <select value={supportPaymentMethod} onChange={(e) => setSupportPaymentMethod(e.target.value)}>
-                  <option>Orange Money</option>
-                  <option>Mobile Money</option>
-                </select>
-              </label>
-              <label>
-                Amount
-                <input
-                  type="number"
-                  min="1"
-                  value={supportAmount}
-                  onChange={(e) => setSupportAmount(e.target.value)}
-                  placeholder="Enter support amount"
-                />
-              </label>
-              <label>
-                Phone Number
-                <input
-                  type="tel"
-                  value={supporterNumber}
-                  onChange={(e) => setSupporterNumber(e.target.value)}
-                  placeholder="Enter your phone number"
-                />
-              </label>
-              <label>
-                Message
-                <textarea
-                  rows={3}
-                  value={supportMessage}
-                  onChange={(e) => setSupportMessage(e.target.value)}
-                  placeholder="Write a short appreciation message"
-                />
-              </label>
-
-              <div className="support-modal-actions">
-                <button type="button" className="ghost" onClick={() => setShowSupportForm(false)}>Cancel</button>
-                <button type="submit" className="primary">Submit Support</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

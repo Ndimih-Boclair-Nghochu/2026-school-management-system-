@@ -1,41 +1,33 @@
 import React from 'react';
 import {
   FaTachometerAlt,
-  FaBookOpen,
-  FaTasks,
-  FaVideo,
-  FaLaptopCode,
-  FaCalendarAlt,
-  FaClipboardList,
-  FaChartBar,
+  FaUsers,
   FaWallet,
+  FaFileInvoiceDollar,
+  FaChartBar,
   FaBullhorn,
-  FaFolderOpen,
-  FaUniversity,
   FaEnvelope,
-  FaUser
+  FaBell,
+  FaUser,
+  FaCog
 } from 'react-icons/fa';
 import './Sidebar.css';
 import { useSchoolConfig } from './schoolConfig';
 
-const studentTabs = [
+const accountantTabs = [
   { key: 'dashboard', label: 'Dashboard', icon: FaTachometerAlt },
-  { key: 'my-subjects', label: 'My Subjects', icon: FaBookOpen },
-  { key: 'assignments', label: 'Assignments', icon: FaTasks },
-  { key: 'online-classes', label: 'Online Classes', icon: FaVideo },
-  { key: 'online-exams', label: 'Online Exams', icon: FaLaptopCode },
-  { key: 'timetable', label: 'Timetable', icon: FaCalendarAlt },
-  { key: 'attendance', label: 'Attendance', icon: FaClipboardList },
-  { key: 'results', label: 'Results', icon: FaChartBar },
-  { key: 'finance', label: 'Finance', icon: FaWallet },
+  { key: 'students', label: 'Students', icon: FaUsers },
+  { key: 'fees-structure', label: 'Fees Structure', icon: FaWallet },
+  { key: 'invoices', label: 'Invoices', icon: FaFileInvoiceDollar },
+  { key: 'financial-reports', label: 'Financial Reports', icon: FaChartBar },
   { key: 'announcements', label: 'Announcements', icon: FaBullhorn },
-  { key: 'online-materials', label: 'Online Materials', icon: FaFolderOpen },
-  { key: 'library', label: 'Library', icon: FaUniversity },
   { key: 'messages', label: 'Messages', icon: FaEnvelope },
-  { key: 'profile', label: 'Profile', icon: FaUser }
+  { key: 'notifications', label: 'Notifications', icon: FaBell },
+  { key: 'profile', label: 'Profile', icon: FaUser },
+  { key: 'settings', label: 'Settings', icon: FaCog }
 ];
 
-const StudentSidebar = ({ active = 'dashboard', onSelect = () => {}, onClose = () => {}, open = false }) => {
+const AccountantSidebar = ({ active = 'dashboard', onSelect = () => {}, onClose = () => {}, open = false }) => {
   const schoolConfig = useSchoolConfig();
   const handleClick = (key) => {
     onSelect(key);
@@ -51,7 +43,7 @@ const StudentSidebar = ({ active = 'dashboard', onSelect = () => {}, onClose = (
 
       <nav className="menu">
         <ul>
-          {studentTabs.map((tab) => {
+          {accountantTabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <li
@@ -69,4 +61,4 @@ const StudentSidebar = ({ active = 'dashboard', onSelect = () => {}, onClose = (
   );
 };
 
-export default StudentSidebar;
+export default AccountantSidebar;

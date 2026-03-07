@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './ExamDetail.css';
+import { getAcademicTermStructure, useSchoolConfig } from './schoolConfig';
 
 const sampleStudents = Array.from({ length: 11 }).map((_, i) => ({
   id: i + 1,
@@ -11,17 +12,33 @@ const sampleStudents = Array.from({ length: 11 }).map((_, i) => ({
 
 const subjects = ['Science', 'Math', 'English', 'History'];
 
-const terms = [
-  { id: 1, name: 'Term 1', sequences: ['Sequence 1', 'Sequence 2'] },
-  { id: 2, name: 'Term 2', sequences: ['Sequence 1', 'Sequence 2'] },
-  { id: 3, name: 'Term 3', sequences: ['Sequence 1', 'Sequence 2'] }
-];
-
 const ExamDetail = ({ examInfo = { title: 'Grade 5 Math Test', subject: 'Math' }, onClose = () => {} }) => {
+  const schoolConfig = useSchoolConfig();
+  const terms = useMemo(() => getAcademicTermStructure(schoolConfig), [schoolConfig]);
   const [students, setStudents] = useState(sampleStudents);
   const [selectedSubject, setSelectedSubject] = useState(examInfo.subject || 'Math');
-  const [selectedTerm, setSelectedTerm] = useState('Term 1');
-  const [selectedSequence, setSelectedSequence] = useState('Sequence 1');
+  const [selectedTerm, setSelectedTerm] = useState(terms[0]?.name || 'Term 1');
+  const [selectedSequence, setSelectedSequence] = useState(terms[0]?.sequences?.[0] || 'Sequence 1');
+
+  const selectedTermDefinition = terms.find((item) => item.name === selectedTerm) || terms[0];
+  const sequenceOptions = useMemo(
+    () => selectedTermDefinition?.sequences || [],
+    [selectedTermDefinition]
+  );
+
+  useEffect(() => {
+    const firstTerm = terms[0];
+    if (!terms.some((item) => item.name === selectedTerm) && firstTerm) {
+      setSelectedTerm(firstTerm.name);
+    }
+  }, [terms, selectedTerm]);
+
+  useEffect(() => {
+    const firstSequence = sequenceOptions[0] || 'Sequence 1';
+    if (!sequenceOptions.includes(selectedSequence)) {
+      setSelectedSequence(firstSequence);
+    }
+  }, [sequenceOptions, selectedSequence]);
 
   const updateMarks = (id, marks) => {
     setStudents(prev => prev.map(s => s.id === id ? { ...s, marks: Math.max(0, marks) } : s));
@@ -76,7 +93,7 @@ const ExamDetail = ({ examInfo = { title: 'Grade 5 Math Test', subject: 'Math' }
         </select>
         <label style={{ marginLeft: '20px' }}>Sequence:</label>
         <select className="subject-dropdown" value={selectedSequence} onChange={(e) => setSelectedSequence(e.target.value)}>
-          {terms.find(t => t.name === selectedTerm)?.sequences.map(seq => (
+          {sequenceOptions.map(seq => (
             <option key={seq} value={seq}>{seq}</option>
           ))}
         </select>
