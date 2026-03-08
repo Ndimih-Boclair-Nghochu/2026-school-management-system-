@@ -1388,6 +1388,10 @@
     align-items: flex-start;
   }
 
+  .librarian-welcome img {
+    order: -1;
+  }
+
   .librarian-stats,
   .librarian-form-grid {
     grid-template-columns: 1fr;

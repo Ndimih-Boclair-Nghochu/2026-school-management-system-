@@ -6,6 +6,7 @@ import LibrarianDashboard from './components/LibrarianDashboard';
 import ParentDashboard from './components/ParentDashboard';
 import AccountantDashboard from './components/AccountantDashboard';
 import AdminDashboard from './components/AdminDashboard';
+import SuperAdminDashboard from './components/SuperAdminDashboard';
 import LoginPage from './components/LoginPage';
 import SchoolLanding from './components/SchoolLanding';
 import {
@@ -49,6 +50,12 @@ const DEMO_ADMIN = {
   matricule: 'ADM2026',
   password: 'admin123',
   phone: '677000666'
+};
+
+const DEMO_SUPER_ADMIN = {
+  matricule: 'FDR2026',
+  password: 'founder123',
+  phone: '677000777'
 };
 
 function App() {
@@ -108,6 +115,14 @@ function App() {
       phone: DEMO_ADMIN.phone,
       role: 'admin',
       avatar: 'https://via.placeholder.com/32/0f766e/ffffff?text=AA'
+    },
+    {
+      matricule: DEMO_SUPER_ADMIN.matricule,
+      name: 'Founder One',
+      password: DEMO_SUPER_ADMIN.password,
+      phone: DEMO_SUPER_ADMIN.phone,
+      role: 'super-admin',
+      avatar: 'https://via.placeholder.com/32/0f172a/ffffff?text=FA'
     }
   ]);
 
@@ -390,6 +405,18 @@ function App() {
       <AdminDashboard
         profile={userProfile}
         onSaveProfile={handleSaveProfile}
+        onLogout={() => {
+          setShowLandingPage(false);
+          setIsAuthenticated(false);
+        }}
+      />
+    );
+  }
+
+  if (activeRole === 'super-admin') {
+    return (
+      <SuperAdminDashboard
+        profile={userProfile}
         onLogout={() => {
           setShowLandingPage(false);
           setIsAuthenticated(false);

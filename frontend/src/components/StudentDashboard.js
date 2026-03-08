@@ -33,6 +33,10 @@ import {
   groupTimetableByDay,
   TIMETABLE_UPDATED_EVENT
 } from './timetableData';
+import {
+  getPublishedReportCards,
+  REPORT_CARD_PUBLISHED_EVENT
+} from './reportCardPublications';
 import './StudentDashboard.css';
 import './Materials.css';
 
@@ -192,6 +196,7 @@ const StudentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
   const [selectedResultTerm, setSelectedResultTerm] = useState('All Terms');
   const [selectedResultSequence, setSelectedResultSequence] = useState('All Sequences');
   const [resultsSubjectSearch, setResultsSubjectSearch] = useState('');
+  const [publishedReportCards, setPublishedReportCards] = useState(() => getPublishedReportCards());
   const [showSupportForm, setShowSupportForm] = useState(false);
   const [supportPaymentMethod, setSupportPaymentMethod] = useState('Orange Money');
   const [supportAmount, setSupportAmount] = useState('');
@@ -317,6 +322,20 @@ const StudentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
       window.removeEventListener('storage', syncTimetable);
     };
   }, [profile?.className, profile?.section]);
+
+  useEffect(() => {
+    const syncPublishedReportCards = () => {
+      setPublishedReportCards(getPublishedReportCards());
+    };
+
+    window.addEventListener(REPORT_CARD_PUBLISHED_EVENT, syncPublishedReportCards);
+    window.addEventListener('storage', syncPublishedReportCards);
+
+    return () => {
+      window.removeEventListener(REPORT_CARD_PUBLISHED_EVENT, syncPublishedReportCards);
+      window.removeEventListener('storage', syncPublishedReportCards);
+    };
+  }, []);
 
   const attendanceBySubject = useMemo(() => ([
     { subject: 'Mathematics', present: 22, absent: 1, late: 0 },
@@ -848,6 +867,28 @@ const StudentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
   const sortedAllResultRecords = useMemo(() => ([...resultRecords].sort((a, b) => (
     new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
   ))), [resultRecords]);
+
+  const studentPublishedReportCards = useMemo(() => {
+    const profileName = String(profile?.name || '').trim().toLowerCase();
+    const profileMatricule = String(profile?.matricule || '').trim().toLowerCase();
+    const profileClass = String(profile?.className || '').trim().toLowerCase();
+    const profileSection = String(profile?.section || '').trim().toLowerCase();
+
+    return publishedReportCards
+      .filter((item) => {
+        const sameMatricule = profileMatricule && String(item.matricule || '').toLowerCase() === profileMatricule;
+        const sameName = profileName && String(item.studentName || '').toLowerCase() === profileName;
+        const sameClass = !profileClass || String(item.className || '').toLowerCase() === profileClass;
+        const sameSection = !profileSection || String(item.section || '').toLowerCase() === profileSection;
+
+        if (sameMatricule) {
+          return true;
+        }
+
+        return sameName && sameClass && sameSection;
+      })
+      .sort((left, right) => new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime());
+  }, [publishedReportCards, profile?.name, profile?.matricule, profile?.className, profile?.section]);
 
   const classRankByPeriod = useMemo(() => ({
     '2023/2024|Term 1|Sequence 1': '18 / 62',
@@ -2226,6 +2267,55 @@ const StudentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
                 <article><strong>{cumulativeAverage.toFixed(2)}/20</strong><span>All-Time Average</span></article>
                 <article><strong>{resultRecords.length}</strong><span>All Published Results</span></article>
               </div>
+            </section>
+
+            <section className="student-panel">
+              <div className="student-panel-head">
+                <h2>Published Report Cards</h2>
+                <p>Report cards published by the admin are visible here (view-only).</p>
+              </div>
+
+              {!studentPublishedReportCards.length && (
+                <p className="student-results-empty">No report card has been published for your profile yet.</p>
+              )}
+
+              {studentPublishedReportCards.map((card) => (
+                <article key={`published-card-${card.id}`} className="student-results-year-card">
+                  <h3>{card.academicYear} • {card.term} • {card.sequence}</h3>
+                  <p><strong>Class:</strong> {card.className} ({card.section})</p>
+                  <p><strong>Average:</strong> {Number(card.average || 0).toFixed(1)}/20</p>
+                  <p><strong>Rank:</strong> {card.rank}/{card.classSize}</p>
+                  <p><strong>Published:</strong> {card.publishedAt}</p>
+
+                  <div className="student-table-wrap" style={{ marginTop: 10 }}>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Subject</th>
+                          <th>Mark</th>
+                          <th>Grade</th>
+                          <th>Coeff</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(card.subjects || []).map((subject) => (
+                          <tr key={`${card.id}-${subject.subject}`}>
+                            <td>{subject.subject}</td>
+                            <td>{subject.score}/20</td>
+                            <td>{subject.grade}</td>
+                            <td>{subject.coefficient}</td>
+                          </tr>
+                        ))}
+                        {!(card.subjects || []).length && (
+                          <tr>
+                            <td colSpan="4" className="student-results-empty">No subject details available for this published report card.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </article>
+              ))}
             </section>
 
             <section className="student-panel">

@@ -14,6 +14,8 @@ import {
 import Header from './Header';
 import AdminSidebar from './AdminSidebar';
 import EditProfile from './EditProfile';
+import Messages from './Messages';
+import Library from './Library';
 import {
   getAcademicTermStructure,
   getSchoolConfig,
@@ -33,10 +35,25 @@ import {
   TIMETABLE_UPDATED_EVENT,
   TIMETABLE_DAYS
 } from './timetableData';
+import { publishReportCards } from './reportCardPublications';
 import './TeacherDashboard.css';
 import './AdminDashboard.css';
 
 const buildAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0f766e&color=fff&bold=true`;
+
+const formatDisplayDate = (value, fallback = '-') => {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return fallback;
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return raw;
+  }
+
+  return parsed.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+};
 
 const formatCurrency = (value) => `XAF ${Number(value || 0).toLocaleString()}`;
 
@@ -80,6 +97,74 @@ const getOrdinalRank = (value) => {
   }
 };
 
+const getRecentAcademicYears = (currentSession, count = 4) => {
+  const source = String(currentSession || '').trim();
+  const [firstChunk, secondChunk] = source.split('/');
+  const startYear = Number.parseInt(firstChunk, 10);
+  const endYear = Number.parseInt(secondChunk, 10);
+
+  if (!Number.isFinite(startYear) || !Number.isFinite(endYear) || endYear !== startYear + 1) {
+    return [source || '2025/2026'];
+  }
+
+  return Array.from({ length: count }, (_, index) => {
+    const from = startYear - index;
+    const to = endYear - index;
+    return `${from}/${to}`;
+  });
+};
+
+const getAcademicYearFromDate = (dateValue, fallbackSession = '2025/2026') => {
+  const raw = String(dateValue || '').trim();
+  if (!raw) {
+    return String(fallbackSession || '2025/2026');
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return String(fallbackSession || '2025/2026');
+  }
+
+  const month = parsed.getMonth() + 1;
+  const year = parsed.getFullYear();
+  const startYear = month >= 9 ? year : year - 1;
+  return `${startYear}/${startYear + 1}`;
+};
+
+const ADMIN_TAB_ACCESS_OPTIONS = [
+  { key: 'dashboard', label: 'Dashboard' },
+  { key: 'schools', label: 'School' },
+  { key: 'users', label: 'Users' },
+  { key: 'admin-enrolment', label: 'Admin Enrolment' },
+  { key: 'students', label: 'Students' },
+  { key: 'id-cards', label: 'ID Cards' },
+  { key: 'parents', label: 'Parents' },
+  { key: 'teachers', label: 'Teachers' },
+  { key: 'staff', label: 'Staff' },
+  { key: 'classes', label: 'Classes' },
+  { key: 'subjects', label: 'Subjects' },
+  { key: 'departments', label: 'Departments' },
+  { key: 'timetable', label: 'Timetable' },
+  { key: 'attendance', label: 'Attendance' },
+  { key: 'exams', label: 'Exams' },
+  { key: 'results', label: 'Results' },
+  { key: 'invoices', label: 'Invoices' },
+  { key: 'announcements', label: 'Announcements' },
+  { key: 'events-calendar', label: 'Events & Calendar' },
+  { key: 'messages', label: 'Messages' },
+  { key: 'notifications', label: 'Notifications' },
+  { key: 'reports', label: 'Reports' },
+  { key: 'library', label: 'Library' },
+  { key: 'transport', label: 'Transport' },
+  { key: 'profile', label: 'Profile' },
+  { key: 'settings', label: 'Settings' }
+];
+
+const ADMIN_TAB_LABEL_LOOKUP = ADMIN_TAB_ACCESS_OPTIONS.reduce((accumulator, tab) => {
+  accumulator[tab.key] = tab.label;
+  return accumulator;
+}, {});
+
 const exportCsv = (rows, filename) => {
   if (!rows.length) {
     alert('No data available for export.');
@@ -111,7 +196,7 @@ const INITIAL_USERS = [
   { id: 2, name: 'Mary Johnson', role: 'Parent', email: 'mary.johnson@email.com', department: 'Community', section: 'English School', status: 'Active' },
   { id: 3, name: 'Grace Librarian', role: 'Staff', email: 'grace.lib@eduignite.edu', department: 'Administration', section: 'French School', status: 'Active' },
   { id: 4, name: 'Daniel Accountant', role: 'Staff', email: 'daniel.acc@eduignite.edu', department: 'Administration', section: 'Technical School', status: 'Active' },
-  { id: 5, name: 'Alicia Admin', role: 'Admin', email: 'alicia.admin@eduignite.edu', department: 'Administration', section: 'English School', status: 'Active' },
+  { id: 5, name: 'Alicia Admin', role: 'Admin', email: 'alicia.admin@eduignite.edu', department: 'Administration', section: 'English School', managedTabs: ADMIN_TAB_ACCESS_OPTIONS.map((tab) => tab.key), status: 'Active' },
   { id: 6, name: 'Peter Nsom', role: 'Teacher', email: 'peter.nsom@eduignite.edu', department: 'Sciences', section: 'Technical School', status: 'On Leave' }
 ];
 
@@ -251,12 +336,6 @@ const INITIAL_RESULTS = INITIAL_RESULT_BLUEPRINTS.flatMap((blueprint, blueprintI
   }));
 });
 
-const INITIAL_FEES = [
-  { id: 1, item: 'Tuition Fee', level: 'All', term: 'Term 2', amount: 120000, mandatory: true, status: 'Active' },
-  { id: 2, item: 'Transport Fee', level: 'Grade 3-6', term: 'Term 2', amount: 30000, mandatory: false, status: 'Active' },
-  { id: 3, item: 'Laboratory Levy', level: 'Grade 5-7', term: 'Term 2', amount: 15000, mandatory: true, status: 'Active' }
-];
-
 const INITIAL_INVOICES = [
   { id: 1, invoiceNo: 'INV-2026-301', student: 'Emily Johnson', className: 'Grade 5', amount: 120000, dueDate: '2026-03-15', status: 'Unpaid' },
   { id: 2, invoiceNo: 'INV-2026-302', student: 'Daniel Johnson', className: 'Grade 3', amount: 30000, dueDate: '2026-03-20', status: 'Unpaid' },
@@ -285,12 +364,6 @@ const INITIAL_NOTIFICATIONS = [
   { id: 2, title: '2 invoices overdue', date: '2026-03-06', unread: true, view: 'invoices' },
   { id: 3, title: 'New event draft pending publish', date: '2026-03-05', unread: true, view: 'events-calendar' },
   { id: 4, title: 'Attendance dropped below 90% in Grade 6', date: '2026-03-05', unread: false, view: 'attendance' }
-];
-
-const INITIAL_LIBRARY = [
-  { id: 1, title: 'Physics Essentials', copies: 22, available: 8, status: 'Low Stock' },
-  { id: 2, title: 'English Grammar Handbook', copies: 30, available: 17, status: 'Healthy' },
-  { id: 3, title: 'African History Atlas', copies: 16, available: 4, status: 'Low Stock' }
 ];
 
 const INITIAL_TRANSPORT = [
@@ -326,19 +399,19 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
   const [attendance] = useState(INITIAL_ATTENDANCE);
   const [exams, setExams] = useState(INITIAL_EXAMS);
   const [results] = useState(INITIAL_RESULTS);
-  const [fees] = useState(INITIAL_FEES);
   const [invoices, setInvoices] = useState(INITIAL_INVOICES);
   const [announcements, setAnnouncements] = useState(INITIAL_ANNOUNCEMENTS);
-  const [events] = useState(INITIAL_EVENTS);
-  const [messages, setMessages] = useState(INITIAL_MESSAGES);
+  const [events, setEvents] = useState(INITIAL_EVENTS);
+  const [messages] = useState(INITIAL_MESSAGES);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-  const [libraryBooks] = useState(INITIAL_LIBRARY);
-  const [transportRoutes] = useState(INITIAL_TRANSPORT);
+  const [transportRoutes, setTransportRoutes] = useState(INITIAL_TRANSPORT);
 
   const [globalSearch, setGlobalSearch] = useState('');
   const [userRoleFilter, setUserRoleFilter] = useState('All');
   const [studentClassFilter, setStudentClassFilter] = useState('All');
   const [studentSectionFilter, setStudentSectionFilter] = useState('All');
+  const [idCardClassFilter, setIdCardClassFilter] = useState('All');
+  const [idCardSectionFilter, setIdCardSectionFilter] = useState('All');
   const [studentGenderFilter, setStudentGenderFilter] = useState('All');
   const [studentPlatformFeeFilter, setStudentPlatformFeeFilter] = useState('All');
   const [studentSchoolFeeFilter, setStudentSchoolFeeFilter] = useState('All');
@@ -389,14 +462,56 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
   const [resultSearchTerm, setResultSearchTerm] = useState('');
   const [resultTopCountInput, setResultTopCountInput] = useState('');
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('All');
-  const [messagePriorityFilter, setMessagePriorityFilter] = useState('All');
   const [paginationState, setPaginationState] = useState({});
 
   const [newAnnouncement, setNewAnnouncement] = useState({ title: '', type: 'General', audience: 'All', date: '2026-03-15', message: '' });
-  const [newMessage, setNewMessage] = useState({ to: 'Teachers', channel: 'Internal', priority: 'Normal', preview: '' });
+  const [newEvent, setNewEvent] = useState(() => ({
+    title: '',
+    date: new Date().toISOString().slice(0, 10),
+    category: 'Academic',
+    organizer: 'Administration'
+  }));
+  const [transportDraft, setTransportDraft] = useState({
+    route: '',
+    busNo: '',
+    driver: '',
+    seats: 40,
+    occupied: 0,
+    status: 'On Schedule'
+  });
   const [settingsDraft, setSettingsDraft] = useState({ ...DEFAULT_ADMIN_SETTINGS });
   const [settingsSnapshot, setSettingsSnapshot] = useState({ ...DEFAULT_ADMIN_SETTINGS });
   const [settingsSavedAt, setSettingsSavedAt] = useState('Not saved yet');
+  const [reportForms, setReportForms] = useState({
+    executive: {
+      period: 'This Term',
+      output: 'PDF'
+    },
+    academic: {
+      section: 'All',
+      className: 'All',
+      output: 'CSV',
+      includeRanking: true
+    },
+    finance: {
+      status: 'All',
+      output: 'CSV',
+      includeOverdueOnly: false
+    }
+  });
+  const [reportAcademicYearFilter, setReportAcademicYearFilter] = useState(schoolProfile.currentSession || '2025/2026');
+  const [generatedReports, setGeneratedReports] = useState([
+    { id: 1, report: 'Executive Summary', format: 'PDF', scope: 'This Term', academicYear: '2025/2026', generatedAt: '2026-03-06' },
+    { id: 2, report: 'Academic Performance', format: 'CSV', scope: 'All Sections', academicYear: '2024/2025', generatedAt: '2025-07-05' },
+    { id: 3, report: 'Finance Reconciliation', format: 'CSV', scope: 'All Invoices', academicYear: '2023/2024', generatedAt: '2024-07-04' }
+  ]);
+  const [adminEnrollmentDraft, setAdminEnrollmentDraft] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    section: 'English School',
+    managedTabs: ['dashboard', 'users', 'students', 'reports']
+  });
   const [activeSlideEditorIndex, setActiveSlideEditorIndex] = useState(0);
   const [slideEditorDraft, setSlideEditorDraft] = useState(getSchoolConfig().landingSlides[0]);
   const [newSectionName, setNewSectionName] = useState('');
@@ -590,6 +705,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
   const teachers = useMemo(() => users.filter((item) => item.role === 'Teacher'), [users]);
   const parents = useMemo(() => users.filter((item) => item.role === 'Parent'), [users]);
   const staff = useMemo(() => users.filter((item) => item.role === 'Staff'), [users]);
+  const managedAdmins = useMemo(() => users.filter((item) => item.role === 'Admin'), [users]);
 
   const profileForEdit = useMemo(() => ({
     matricule: profile?.matricule || 'ADM2026',
@@ -603,7 +719,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
     const query = globalSearch.trim().toLowerCase();
     return users.filter((item) => {
       const roleMatch = userRoleFilter === 'All' || item.role === userRoleFilter;
-      const queryMatch = !query || `${item.name} ${item.email} ${item.role} ${item.department} ${item.section || ''}`.toLowerCase().includes(query);
+      const queryMatch = !query || `${item.name} ${item.email} ${item.role} ${item.department} ${item.section || ''} ${(item.managedTabs || []).map((tab) => ADMIN_TAB_LABEL_LOOKUP[tab] || tab).join(' ')}`.toLowerCase().includes(query);
       return roleMatch && queryMatch;
     });
   }, [users, globalSearch, userRoleFilter]);
@@ -816,15 +932,6 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
     });
   }, [invoices, globalSearch, invoiceStatusFilter]);
 
-  const filteredMessages = useMemo(() => {
-    const query = globalSearch.trim().toLowerCase();
-    return messages.filter((item) => {
-      const priorityMatch = messagePriorityFilter === 'All' || item.priority === messagePriorityFilter;
-      const queryMatch = !query || `${item.from} ${item.to} ${item.channel} ${item.preview}`.toLowerCase().includes(query);
-      return priorityMatch && queryMatch;
-    });
-  }, [messages, globalSearch, messagePriorityFilter]);
-
   const filteredExams = useMemo(() => {
     const query = examSearchTerm.trim().toLowerCase();
 
@@ -972,13 +1079,6 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
     classes: new Set(filteredExams.map((item) => item.className).filter(Boolean)).size
   }), [filteredExams]);
 
-  const feeSummary = useMemo(() => ({
-    total: fees.length,
-    active: fees.filter((item) => item.status === 'Active').length,
-    mandatory: fees.filter((item) => item.mandatory).length,
-    amountTotal: fees.reduce((sum, item) => sum + Number(item.amount || 0), 0)
-  }), [fees]);
-
   const eventSummary = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     return {
@@ -988,13 +1088,6 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
       organizers: new Set(events.map((item) => item.organizer).filter(Boolean)).size
     };
   }, [events]);
-
-  const librarySummary = useMemo(() => ({
-    totalTitles: libraryBooks.length,
-    totalCopies: libraryBooks.reduce((sum, item) => sum + Number(item.copies || 0), 0),
-    availableCopies: libraryBooks.reduce((sum, item) => sum + Number(item.available || 0), 0),
-    lowStock: libraryBooks.filter((item) => String(item.status || '').toLowerCase() === 'low stock').length
-  }), [libraryBooks]);
 
   const transportSummary = useMemo(() => {
     const totalSeats = transportRoutes.reduce((sum, item) => sum + Number(item.seats || 0), 0);
@@ -1152,6 +1245,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
         students: 0,
         average: 0,
         passRate: 0,
+        failedRate: 0,
         topStudent: '-',
         topAverage: 0,
         excellent: 0,
@@ -1167,6 +1261,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
       students: rankedStudentPerformanceRows.length,
       average: Number((totalAverage / rankedStudentPerformanceRows.length).toFixed(1)),
       passRate: Math.round((passCount / rankedStudentPerformanceRows.length) * 100),
+      failedRate: Math.max(0, 100 - Math.round((passCount / rankedStudentPerformanceRows.length) * 100)),
       topStudent: top?.name || '-',
       topAverage: Number(top?.average || 0),
       excellent: rankedStudentPerformanceRows.filter((item) => item.average >= 16).length,
@@ -1192,6 +1287,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
         classes: new Set(items.map((item) => item.className)).size,
         average: Number((items.reduce((sum, item) => sum + item.average, 0) / items.length).toFixed(1)),
         passRate: Math.round((passCount / items.length) * 100),
+        failedRate: Math.max(0, 100 - Math.round((passCount / items.length) * 100)),
         topStudent: top?.name || '-'
       };
     }).sort((left, right) => left.section.localeCompare(right.section));
@@ -1218,6 +1314,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
         students: items.length,
         average: Number((items.reduce((sum, item) => sum + item.average, 0) / items.length).toFixed(1)),
         passRate: Math.round((passCount / items.length) * 100),
+        failedRate: Math.max(0, 100 - Math.round((passCount / items.length) * 100)),
         topStudent: top?.name || '-'
       };
     }).sort((left, right) => (
@@ -1256,7 +1353,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
 
   const filteredResultSummary = useMemo(() => {
     if (!filteredRankedStudentRows.length) {
-      return { students: 0, average: 0, passRate: 0, excellent: 0, atRisk: 0 };
+      return { students: 0, average: 0, passRate: 0, failedRate: 0, excellent: 0, atRisk: 0 };
     }
 
     const totalAverage = filteredRankedStudentRows.reduce((sum, item) => sum + item.average, 0);
@@ -1265,10 +1362,163 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
       students: filteredRankedStudentRows.length,
       average: Number((totalAverage / filteredRankedStudentRows.length).toFixed(1)),
       passRate: Math.round((passCount / filteredRankedStudentRows.length) * 100),
+      failedRate: Math.max(0, 100 - Math.round((passCount / filteredRankedStudentRows.length) * 100)),
       excellent: filteredRankedStudentRows.filter((item) => item.average >= 16).length,
       atRisk: filteredRankedStudentRows.filter((item) => item.average < 10).length
     };
   }, [filteredRankedStudentRows]);
+
+  const exportSchoolPerformancePdf = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 12;
+    const contentWidth = pageWidth - (margin * 2);
+    const green = [15, 118, 110];
+    const blue = [29, 78, 216];
+
+    doc.setFillColor(green[0], green[1], green[2]);
+    doc.rect(margin, 12, contentWidth, 14, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(`${schoolProfile.schoolName} - SCHOOL PERFORMANCE REPORT`, pageWidth / 2, 21, { align: 'center' });
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10.5);
+    doc.text(`Academic Session: ${reportAcademicYearFilter}`, margin, 34);
+    doc.text(`Term: ${schoolProfile.currentTerm}`, margin + 72, 34);
+    doc.text(`Generated: ${new Date().toISOString().slice(0, 10)}`, margin + 125, 34);
+
+    const cardsY = 40;
+    const gap = 3;
+    const cardWidth = (contentWidth - (gap * 3)) / 4;
+    const cardHeight = 18;
+    const cards = [
+      { label: 'Students', value: String(schoolPerformanceStats.students), fill: [240, 249, 255] },
+      { label: 'School Average', value: `${schoolPerformanceStats.average}/20`, fill: [236, 253, 245] },
+      { label: 'Passed %', value: `${schoolPerformanceStats.passRate}%`, fill: [239, 246, 255] },
+      { label: 'Failed %', value: `${schoolPerformanceStats.failedRate}%`, fill: [254, 242, 242] }
+    ];
+
+    cards.forEach((card, index) => {
+      const x = margin + ((cardWidth + gap) * index);
+      doc.setDrawColor(209, 213, 219);
+      doc.setFillColor(card.fill[0], card.fill[1], card.fill[2]);
+      doc.rect(x, cardsY, cardWidth, cardHeight, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.text(card.label, x + 3, cardsY + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.text(card.value, x + 3, cardsY + 13);
+    });
+
+    let y = 66;
+    doc.setFillColor(blue[0], blue[1], blue[2]);
+    doc.rect(margin, y, contentWidth, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text('SUB-SCHOOL PERFORMANCE SUMMARY', margin + 3, y + 5.5);
+    y += 10;
+
+    const sectionHeaders = ['Sub-School', 'Students', 'Classes', 'Average', 'Passed %', 'Failed %'];
+    const sectionCols = [54, 22, 20, 24, 24, 24];
+    const sectionWidth = sectionCols.reduce((sum, width) => sum + width, 0);
+    const rowHeight = 7;
+
+    doc.setFillColor(31, 41, 55);
+    doc.rect(margin, y, sectionWidth, rowHeight, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    let x = margin;
+    sectionHeaders.forEach((header, index) => {
+      doc.text(header, x + (sectionCols[index] / 2), y + 4.7, { align: 'center' });
+      x += sectionCols[index];
+    });
+    y += rowHeight;
+
+    sectionPerformanceStats.forEach((item, index) => {
+      if (y > pageHeight - 48) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFillColor(index % 2 === 0 ? 248 : 255, index % 2 === 0 ? 250 : 255, index % 2 === 0 ? 252 : 255);
+      doc.rect(margin, y, sectionWidth, rowHeight, 'F');
+      doc.setDrawColor(229, 231, 235);
+      doc.rect(margin, y, sectionWidth, rowHeight);
+      const values = [item.section, item.students, item.classes, `${item.average}/20`, `${item.passRate}%`, `${item.failedRate}%`];
+      let cx = margin;
+      doc.setTextColor(17, 24, 39);
+      values.forEach((value, valueIndex) => {
+        const align = valueIndex === 0 ? 'left' : 'center';
+        const tx = align === 'left' ? cx + 2 : cx + (sectionCols[valueIndex] / 2);
+        doc.text(String(value), tx, y + 4.7, { align });
+        cx += sectionCols[valueIndex];
+      });
+      y += rowHeight;
+    });
+
+    y += 8;
+    doc.setFillColor(blue[0], blue[1], blue[2]);
+    doc.rect(margin, y, contentWidth, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text('CLASS PERFORMANCE SUMMARY', margin + 3, y + 5.5);
+    y += 10;
+
+    const classHeaders = ['Class', 'Sub-School', 'Students', 'Average', 'Passed %', 'Failed %'];
+    const classCols = [32, 45, 20, 24, 24, 24];
+    const classWidth = classCols.reduce((sum, width) => sum + width, 0);
+
+    doc.setFillColor(31, 41, 55);
+    doc.rect(margin, y, classWidth, rowHeight, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    x = margin;
+    classHeaders.forEach((header, index) => {
+      doc.text(header, x + (classCols[index] / 2), y + 4.7, { align: 'center' });
+      x += classCols[index];
+    });
+    y += rowHeight;
+
+    classPerformanceStats.forEach((item, index) => {
+      if (y > pageHeight - 14) {
+        doc.addPage();
+        y = 20;
+        doc.setFillColor(31, 41, 55);
+        doc.rect(margin, y, classWidth, rowHeight, 'F');
+        doc.setTextColor(255, 255, 255);
+        x = margin;
+        classHeaders.forEach((header, headerIndex) => {
+          doc.text(header, x + (classCols[headerIndex] / 2), y + 4.7, { align: 'center' });
+          x += classCols[headerIndex];
+        });
+        y += rowHeight;
+      }
+
+      doc.setFillColor(index % 2 === 0 ? 248 : 255, index % 2 === 0 ? 250 : 255, index % 2 === 0 ? 252 : 255);
+      doc.rect(margin, y, classWidth, rowHeight, 'F');
+      doc.setDrawColor(229, 231, 235);
+      doc.rect(margin, y, classWidth, rowHeight);
+      const values = [item.className, item.section, item.students, `${item.average}/20`, `${item.passRate}%`, `${item.failedRate}%`];
+      let cx = margin;
+      doc.setTextColor(17, 24, 39);
+      values.forEach((value, valueIndex) => {
+        const align = valueIndex <= 1 ? 'left' : 'center';
+        const tx = align === 'left' ? cx + 2 : cx + (classCols[valueIndex] / 2);
+        doc.text(String(value), tx, y + 4.7, { align });
+        cx += classCols[valueIndex];
+      });
+      y += rowHeight;
+    });
+
+    const safeSection = resultSectionFilter === 'All'
+      ? 'all-sections'
+      : String(resultSectionFilter).replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+    doc.save(`school-performance-summary-${safeSection}.pdf`);
+  };
 
   const filteredSectionPerformanceStats = useMemo(() => {
     return sectionPerformanceStats.filter((item) => (
@@ -1368,6 +1618,66 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
       resultAverage: resultSummary.average
     };
   }, [users, invoices, attendanceSummary.rate, resultSummary.average]);
+
+  const reportAcademicYearOptions = useMemo(() => {
+    const recentYears = getRecentAcademicYears(schoolProfile.currentSession, 5);
+    const generatedYears = generatedReports.map((item) => item.academicYear).filter(Boolean);
+    return Array.from(new Set([...recentYears, ...generatedYears]));
+  }, [schoolProfile.currentSession, generatedReports]);
+
+  const yearScopedFinanceInvoices = useMemo(() => {
+    const fallbackSession = schoolProfile.currentSession || reportAcademicYearFilter || '2025/2026';
+    return invoices.filter((item) => (
+      getAcademicYearFromDate(item.dueDate, fallbackSession) === reportAcademicYearFilter
+    ));
+  }, [invoices, schoolProfile.currentSession, reportAcademicYearFilter]);
+
+  const yearScopedAttendanceRows = useMemo(() => {
+    const fallbackSession = schoolProfile.currentSession || reportAcademicYearFilter || '2025/2026';
+    return attendance.filter((item) => (
+      getAcademicYearFromDate(item.date, fallbackSession) === reportAcademicYearFilter
+    ));
+  }, [attendance, schoolProfile.currentSession, reportAcademicYearFilter]);
+
+  const yearScopedReportData = useMemo(() => {
+    const collections = yearScopedFinanceInvoices
+      .filter((item) => item.status === 'Paid')
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const billed = yearScopedFinanceInvoices
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    const attendanceRate = yearScopedAttendanceRows.length
+      ? Math.round(
+        yearScopedAttendanceRows.reduce((sum, item) => {
+          const present = Number(item.present || 0);
+          const absent = Number(item.absent || 0);
+          const late = Number(item.late || 0);
+          const total = present + absent + late;
+          return sum + (total ? ((present / total) * 100) : 0);
+        }, 0) / yearScopedAttendanceRows.length
+      )
+      : 0;
+
+    const resultAverage = reportAcademicYearFilter === (schoolProfile.currentSession || reportAcademicYearFilter)
+      ? resultSummary.average
+      : 0;
+
+    return {
+      usersByRole: reportData.usersByRole,
+      billed,
+      collections,
+      outstanding: billed - collections,
+      attendanceRate,
+      resultAverage
+    };
+  }, [
+    yearScopedFinanceInvoices,
+    yearScopedAttendanceRows,
+    reportAcademicYearFilter,
+    schoolProfile.currentSession,
+    resultSummary.average,
+    reportData.usersByRole
+  ]);
 
   const enrollmentByClass = useMemo(() => {
     const grouped = students.reduce((accumulator, item) => {
@@ -1549,6 +1859,16 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
 
   const classOptions = useMemo(() => ['All', ...Array.from(new Set(students.map((item) => item.className)))], [students]);
   const studentSectionOptions = useMemo(() => ['All', ...Array.from(new Set(students.map((item) => item.section).filter(Boolean)))], [students]);
+  const idCardClassOptions = useMemo(() => {
+    const classNames = Array.from(new Set(students.map((item) => item.className).filter(Boolean)));
+    return ['All', ...classNames];
+  }, [students]);
+  const idCardSectionOptions = useMemo(() => {
+    const scopedStudents = idCardClassFilter === 'All'
+      ? students
+      : students.filter((item) => item.className === idCardClassFilter);
+    return ['All', ...Array.from(new Set(scopedStudents.map((item) => item.section).filter(Boolean)))];
+  }, [students, idCardClassFilter]);
   const studentGenderOptions = useMemo(() => ['All', 'Male', 'Female', 'Not Specified'], []);
   const enrollmentClassOptions = useMemo(() => {
     const registeredClassNames = Array.from(new Set(classes.map((item) => item.name))).filter(Boolean);
@@ -1574,6 +1894,67 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
   const subjectDepartmentOptions = useMemo(() => ['All', ...Array.from(new Set(departments.map((item) => item.name).filter(Boolean)))], [departments]);
   const subjectStatusOptions = useMemo(() => ['All', ...Array.from(new Set(subjects.map((item) => item.status || 'Active').filter(Boolean)))], [subjects]);
   const subjectTeacherOptions = useMemo(() => ['Unassigned', ...Array.from(new Set(teachers.map((item) => item.name).filter(Boolean)))], [teachers]);
+  const idCardEnrollmentLookup = useMemo(() => {
+    const lookup = new Map();
+    studentEnrollments.forEach((entry) => {
+      const matriculeKey = String(entry.matricule || '').trim().toLowerCase();
+      const nameKey = String(entry.name || '').trim().toLowerCase();
+
+      if (matriculeKey) {
+        lookup.set(matriculeKey, entry);
+      }
+      if (nameKey) {
+        lookup.set(nameKey, entry);
+      }
+    });
+
+    return lookup;
+  }, [studentEnrollments]);
+  const idCardRows = useMemo(() => {
+    return students
+      .filter((item) => (idCardClassFilter === 'All' || item.className === idCardClassFilter))
+      .filter((item) => (idCardSectionFilter === 'All' || item.section === idCardSectionFilter))
+      .sort((left, right) => (
+        left.className.localeCompare(right.className)
+        || left.section.localeCompare(right.section)
+        || left.name.localeCompare(right.name)
+      ))
+      .map((student) => {
+        const enrollment = idCardEnrollmentLookup.get(String(student.matricule || '').toLowerCase())
+          || idCardEnrollmentLookup.get(String(student.name || '').toLowerCase())
+          || {};
+        const idNumber = student.matricule || `STD-${String(student.id || '').padStart(4, '0')}`;
+        const qrPayload = [
+          schoolProfile.schoolName,
+          student.name,
+          idNumber,
+          student.className,
+          student.section,
+          schoolProfile.currentSession
+        ].filter(Boolean).join(' | ');
+
+        return {
+          ...student,
+          idNumber,
+          dateOfBirth: enrollment.dateOfBirth || '',
+          avatar: buildAvatar(student.name),
+          qrUrl: `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(qrPayload)}`
+        };
+      });
+  }, [students, idCardClassFilter, idCardSectionFilter, idCardEnrollmentLookup, schoolProfile]);
+
+  useEffect(() => {
+    if (idCardClassFilter !== 'All' && !idCardClassOptions.includes(idCardClassFilter)) {
+      setIdCardClassFilter('All');
+    }
+  }, [idCardClassFilter, idCardClassOptions]);
+
+  useEffect(() => {
+    if (idCardSectionFilter !== 'All' && !idCardSectionOptions.includes(idCardSectionFilter)) {
+      setIdCardSectionFilter('All');
+    }
+  }, [idCardSectionFilter, idCardSectionOptions]);
+
   const timetableDraftSubjectOptions = useMemo(() => {
     if (!timetableDraft.className || !timetableDraft.section) {
       return Array.from(new Set(subjects.map((item) => item.name).filter(Boolean)));
@@ -2209,6 +2590,63 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
     setNotice(`Sub-school assignment updated to ${section}.`);
   };
 
+  const enrollAdminFromAdmin = () => {
+    const safeName = String(adminEnrollmentDraft.name || '').trim();
+    const safeEmail = String(adminEnrollmentDraft.email || '').trim();
+    const safePhone = String(adminEnrollmentDraft.phone || '').trim();
+    const safeTabs = (adminEnrollmentDraft.managedTabs || []).filter(Boolean);
+
+    if (!safeName) {
+      alert('Please provide admin full name.');
+      return;
+    }
+
+    if (!safeTabs.length) {
+      alert('Please allocate at least one manageable tab.');
+      return;
+    }
+
+    const fallbackEmail = `${safeName.toLowerCase().replace(/\s+/g, '.')}@eduignite.edu`;
+    const adminMatricule = `ADM-${safeName.replace(/[^a-zA-Z]/g, '').slice(0, 5).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+    const nextAdmin = {
+      id: Date.now(),
+      matricule: adminMatricule,
+      name: safeName,
+      role: 'Admin',
+      email: safeEmail || fallbackEmail,
+      phone: safePhone,
+      department: 'Administration',
+      section: adminEnrollmentDraft.section || sectionOptions[0] || 'English School',
+      managedTabs: safeTabs,
+      status: 'Active'
+    };
+
+    setUsers((prev) => [nextAdmin, ...prev]);
+    setAdminEnrollmentDraft((prev) => ({
+      ...prev,
+      name: '',
+      email: '',
+      phone: '',
+      managedTabs: ['dashboard', 'users', 'students', 'reports']
+    }));
+    setNotice(`Admin enrolled successfully: ${nextAdmin.name}`);
+  };
+
+  const updateAdminManagedTabs = (id, managedTabs) => {
+    const safeTabs = (managedTabs || []).filter(Boolean);
+    if (!safeTabs.length) {
+      alert('At least one tab must be assigned to an admin.');
+      return;
+    }
+
+    setUsers((prev) => prev.map((item) => (
+      item.id === id && item.role === 'Admin'
+        ? { ...item, managedTabs: safeTabs }
+        : item
+    )));
+    setNotice('Admin tab allocation updated successfully.');
+  };
+
   const assignStudentSection = (id, section) => {
     let blocked = false;
     setStudents((prev) => prev.map((item) => {
@@ -2334,28 +2772,67 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
   };
 
   const downloadStudentEnrollmentPdf = (student) => {
-    const enrollment = studentEnrollments.find((item) => item.matricule === student.matricule);
-    const doc = new jsPDF();
-    const lines = [
-      `School: ${schoolProfile.schoolName}`,
-      `School Code: ${schoolProfile.schoolCode}`,
-      `Student Name: ${student.name}`,
-      `Matricule: ${student.matricule || 'N/A'}`,
-      `Sub-School: ${student.section || 'N/A'}`,
-      `Class: ${student.className || 'N/A'}`,
-      `Parent/Guardian: ${student.parent || enrollment?.parent || 'N/A'}`,
-      `Gender: ${enrollment?.gender || 'N/A'}`,
-      `Date of Birth: ${enrollment?.dateOfBirth || 'N/A'}`,
-      `Guardian Phone: ${enrollment?.guardianPhone || 'N/A'}`,
-      `Address: ${enrollment?.address || 'N/A'}`,
-      `Platform Fee Status: ${student.platformFeePaid ? 'Paid' : 'Pending'}`,
-      `Enrolled At: ${enrollment?.enrolledAt || new Date().toISOString().slice(0, 10)}`
+    const enrollment = studentEnrollments.find((item) => item.matricule === student.matricule || item.name === student.name);
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const resolveValue = (value) => {
+      const normalized = String(value || '').trim();
+      if (!normalized || normalized.toLowerCase() === 'not specified') {
+        return 'N/A';
+      }
+      return normalized;
+    };
+
+    const rows = [
+      { label: 'School', value: resolveValue(schoolProfile.schoolName || 'EduIgnite International School') },
+      { label: 'School Code', value: resolveValue(schoolProfile.schoolCode || 'EIMS-MAIN') },
+      { label: 'Student Name', value: resolveValue(student.name) },
+      { label: 'Matricule', value: resolveValue(student.matricule) },
+      { label: 'Sub-School', value: resolveValue(student.section || enrollment?.subSchool) },
+      { label: 'Class', value: resolveValue(student.className || enrollment?.className) },
+      { label: 'Parent/Guardian', value: resolveValue(student.parent || enrollment?.parent) },
+      { label: 'Gender', value: resolveValue(enrollment?.gender || student.gender) },
+      { label: 'Date of Birth', value: resolveValue(enrollment?.dateOfBirth || student.dateOfBirth) },
+      { label: 'Guardian Phone', value: resolveValue(enrollment?.guardianPhone || student.guardianPhone) },
+      { label: 'Address', value: resolveValue(enrollment?.address || student.address) },
+      { label: 'Platform Fee Status', value: student.platformFeePaid ? 'Paid' : 'Pending' },
+      { label: 'Enrolled At', value: resolveValue(enrollment?.enrolledAt || student.enrolledAt || new Date().toISOString().slice(0, 10)) }
     ];
 
-    doc.setFontSize(16);
-    doc.text('Student Enrollment Form', 14, 20);
-    doc.setFontSize(11);
-    lines.forEach((line, index) => doc.text(line, 14, 35 + index * 8));
+    doc.setDrawColor(20, 84, 72);
+    doc.setLineWidth(0.7);
+    doc.rect(10, 10, 190, 277);
+    doc.setLineWidth(0.25);
+    doc.rect(13, 13, 184, 271);
+
+    doc.setTextColor(20, 84, 72);
+    doc.setFont('times', 'bold');
+    doc.setFontSize(17);
+    doc.text('STUDENT ENROLLMENT FORM', 105, 24, { align: 'center' });
+
+    doc.setDrawColor(201, 172, 83);
+    doc.setLineWidth(1);
+    doc.line(24, 30, 186, 30);
+
+    doc.setTextColor(35, 35, 35);
+    doc.setFont('times', 'normal');
+    doc.setFontSize(11.2);
+
+    let y = 40;
+    rows.forEach((row) => {
+      doc.setFillColor(243, 246, 244);
+      doc.rect(16, y - 6, 56, 9, 'F');
+      doc.setDrawColor(215, 215, 215);
+      doc.rect(16, y - 6, 176, 9);
+      doc.setFont('times', 'bold');
+      doc.text(`${row.label}:`, 19, y);
+      doc.setFont('times', 'normal');
+      doc.text(String(row.value), 74, y);
+      y += 10;
+    });
+
+    doc.setTextColor(95, 95, 95);
+    doc.setFontSize(10);
+    doc.text('Generated by the school management enrollment workflow.', 16, 274);
     doc.save(`${(student.matricule || student.name || 'student').replace(/\s+/g, '-')}-enrollment-form.pdf`);
   };
 
@@ -3137,26 +3614,105 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
     setNotice('Announcement published to the selected audience.');
   };
 
-  const sendMessage = () => {
-    const body = newMessage.preview.trim();
-    if (!body) {
-      alert('Please enter a message before sending.');
+  const addEvent = () => {
+    const title = newEvent.title.trim();
+    const date = String(newEvent.date || '').trim();
+
+    if (!title || !date) {
+      alert('Please enter event title and date.');
       return;
     }
 
-    const message = {
+    const eventItem = {
       id: Date.now(),
-      from: profile?.name || 'Admin Office',
-      to: newMessage.to,
-      channel: newMessage.channel,
-      priority: newMessage.priority,
-      date: new Date().toISOString().slice(0, 10),
-      preview: body
+      title,
+      date,
+      category: newEvent.category,
+      organizer: newEvent.organizer
     };
 
-    setMessages((prev) => [message, ...prev]);
-    setNewMessage({ to: 'Teachers', channel: 'Internal', priority: 'Normal', preview: '' });
-    setNotice('Message sent successfully.');
+    setEvents((prev) => [eventItem, ...prev]);
+    setPaginationState((prev) => ({ ...prev, events: 1 }));
+    setNewEvent({
+      title: '',
+      date: new Date().toISOString().slice(0, 10),
+      category: 'Academic',
+      organizer: 'Administration'
+    });
+    setNotice('Event added to school calendar successfully.');
+  };
+
+  const addTransportRoute = () => {
+    const route = String(transportDraft.route || '').trim();
+    const busNo = String(transportDraft.busNo || '').trim();
+    const driver = String(transportDraft.driver || '').trim();
+    const seats = Number(transportDraft.seats || 0);
+    const occupied = Number(transportDraft.occupied || 0);
+
+    if (!route || !busNo || !driver) {
+      alert('Please provide route, bus number, and driver name.');
+      return;
+    }
+
+    if (!Number.isFinite(seats) || seats <= 0) {
+      alert('Seats must be greater than zero.');
+      return;
+    }
+
+    if (!Number.isFinite(occupied) || occupied < 0 || occupied > seats) {
+      alert('Occupied seats must be between 0 and total seats.');
+      return;
+    }
+
+    const status = occupied >= seats ? 'Full' : transportDraft.status;
+    const routeItem = {
+      id: Date.now(),
+      route,
+      busNo,
+      driver,
+      seats,
+      occupied,
+      status
+    };
+
+    setTransportRoutes((prev) => [routeItem, ...prev]);
+    setPaginationState((prev) => ({ ...prev, transport: 1 }));
+    setTransportDraft({
+      route: '',
+      busNo: '',
+      driver: '',
+      seats: 40,
+      occupied: 0,
+      status: 'On Schedule'
+    });
+    setNotice('Transport route added successfully.');
+  };
+
+  const updateTransportOccupancy = (id, change) => {
+    setTransportRoutes((prev) => prev.map((item) => {
+      if (item.id !== id) {
+        return item;
+      }
+
+      const seats = Number(item.seats || 0);
+      const nextOccupied = Math.min(seats, Math.max(0, Number(item.occupied || 0) + Number(change || 0)));
+      return {
+        ...item,
+        occupied: nextOccupied,
+        status: nextOccupied >= seats ? 'Full' : item.status === 'Full' ? 'On Schedule' : item.status
+      };
+    }));
+    setNotice('Transport occupancy updated.');
+  };
+
+  const updateTransportStatus = (id, status) => {
+    setTransportRoutes((prev) => prev.map((item) => (item.id === id ? { ...item, status } : item)));
+    setNotice('Transport route status updated.');
+  };
+
+  const removeTransportRoute = (id) => {
+    setTransportRoutes((prev) => prev.filter((item) => item.id !== id));
+    setNotice('Transport route removed.');
   };
 
   const markNotificationRead = (id) => {
@@ -3188,25 +3744,281 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
     setNotice('Default admin settings restored.');
   };
 
+  const updateReportForm = (formKey, field, value) => {
+    setReportForms((prev) => ({
+      ...prev,
+      [formKey]: {
+        ...prev[formKey],
+        [field]: value
+      }
+    }));
+  };
+
+  const logGeneratedReport = (report, format, scope) => {
+    setGeneratedReports((prev) => ([
+      {
+        id: Date.now(),
+        report,
+        format,
+        scope,
+        academicYear: reportAcademicYearFilter,
+        generatedAt: new Date().toISOString().slice(0, 10)
+      },
+      ...prev
+    ].slice(0, 10)));
+  };
+
   const exportReportsPdf = () => {
-    const pdf = new jsPDF();
-    const rows = [
-      `Users - Admin: ${reportData.usersByRole.Admin}`,
-      `Users - Teachers: ${reportData.usersByRole.Teachers}`,
-      `Users - Parents: ${reportData.usersByRole.Parents}`,
-      `Users - Staff: ${reportData.usersByRole.Staff}`,
-      `Billed: ${formatCurrency(reportData.billed)}`,
-      `Collected: ${formatCurrency(reportData.collections)}`,
-      `Outstanding: ${formatCurrency(reportData.outstanding)}`,
-      `Attendance Rate: ${reportData.attendanceRate}%`,
-      `Result Average: ${reportData.resultAverage}/20`
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 12;
+    const contentWidth = pageWidth - (margin * 2);
+    const green = [15, 118, 110];
+    const blue = [29, 78, 216];
+    const generatedAt = new Date().toISOString().slice(0, 10);
+
+    doc.setFillColor(green[0], green[1], green[2]);
+    doc.rect(margin, 12, contentWidth, 14, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(`${schoolProfile.schoolName} - EXECUTIVE SUMMARY REPORT`, pageWidth / 2, 21, { align: 'center' });
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    doc.text(`Academic Session: ${reportAcademicYearFilter}`, margin, 34);
+    doc.text(`Term: ${schoolProfile.currentTerm}`, margin + 74, 34);
+    doc.text(`Period: ${reportForms.executive.period}`, margin, 40);
+    doc.text(`Generated: ${generatedAt}`, margin + 124, 40);
+
+    const cardsY = 46;
+    const cardGap = 3;
+    const cardWidth = (contentWidth - (cardGap * 3)) / 4;
+    const cardHeight = 18;
+    const cards = [
+      { label: 'Attendance Rate', value: `${yearScopedReportData.attendanceRate}%`, fill: [240, 249, 255] },
+      { label: 'Result Average', value: `${yearScopedReportData.resultAverage}/20`, fill: [236, 253, 245] },
+      { label: 'Total Billed', value: formatCurrency(yearScopedReportData.billed), fill: [239, 246, 255] },
+      { label: 'Outstanding', value: formatCurrency(yearScopedReportData.outstanding), fill: [254, 242, 242] }
     ];
 
-    pdf.setFontSize(16);
-    pdf.text('EduIgnite - Administration Summary Report', 14, 20);
-    pdf.setFontSize(11);
-    rows.forEach((line, index) => pdf.text(line, 14, 36 + index * 8));
-    pdf.save('admin-summary-report.pdf');
+    cards.forEach((card, index) => {
+      const x = margin + ((cardWidth + cardGap) * index);
+      doc.setDrawColor(209, 213, 219);
+      doc.setFillColor(card.fill[0], card.fill[1], card.fill[2]);
+      doc.rect(x, cardsY, cardWidth, cardHeight, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.text(card.label, x + 3, cardsY + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.text(String(card.value), x + 3, cardsY + 13);
+    });
+
+    let y = 70;
+    doc.setFillColor(blue[0], blue[1], blue[2]);
+    doc.rect(margin, y, contentWidth, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text('USERS BY ROLE', margin + 3, y + 5.5);
+    y += 10;
+
+    const userRows = Object.entries(yearScopedReportData.usersByRole).map(([role, count]) => ({ role, count }));
+    const userHeaders = ['Role', 'Users'];
+    const userCols = [110, 50];
+    const rowHeight = 7;
+    const tableWidth = userCols.reduce((sum, width) => sum + width, 0);
+
+    doc.setFillColor(31, 41, 55);
+    doc.rect(margin, y, tableWidth, rowHeight, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    let x = margin;
+    userHeaders.forEach((header, index) => {
+      doc.text(header, x + 2, y + 4.8);
+      x += userCols[index];
+    });
+    y += rowHeight;
+
+    userRows.forEach((item, index) => {
+      const fill = index % 2 === 0 ? 248 : 255;
+      doc.setFillColor(fill, fill, fill);
+      doc.setDrawColor(220, 224, 230);
+      doc.rect(margin, y, tableWidth, rowHeight, 'FD');
+      doc.setTextColor(17, 24, 39);
+      doc.setFont('helvetica', 'normal');
+      doc.text(String(item.role), margin + 2, y + 4.8);
+      doc.text(String(item.count), margin + userCols[0] + 2, y + 4.8);
+      y += rowHeight;
+    });
+
+    y += 6;
+    doc.setFillColor(blue[0], blue[1], blue[2]);
+    doc.rect(margin, y, contentWidth, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text('FINANCIAL SNAPSHOT', margin + 3, y + 5.5);
+    y += 11;
+
+    const financeSnapshot = [
+      `Total Billed: ${formatCurrency(yearScopedReportData.billed)}`,
+      `Collections: ${formatCurrency(yearScopedReportData.collections)}`,
+      `Outstanding Balance: ${formatCurrency(yearScopedReportData.outstanding)}`,
+      `Collection Rate: ${yearScopedReportData.billed ? Math.round((yearScopedReportData.collections / yearScopedReportData.billed) * 100) : 0}%`
+    ];
+
+    doc.setDrawColor(209, 213, 219);
+    doc.setFillColor(248, 250, 252);
+    doc.rect(margin, y, contentWidth, 30, 'FD');
+    doc.setTextColor(31, 41, 55);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    financeSnapshot.forEach((line, index) => {
+      doc.text(line, margin + 4, y + 6 + (index * 6));
+    });
+
+    doc.setFontSize(8.5);
+    doc.setTextColor(71, 84, 103);
+    doc.text(`Generated by ${profileForEdit.name} on ${generatedAt}`, pageWidth / 2, 286, { align: 'center' });
+    doc.save('admin-executive-summary.pdf');
+  };
+
+  const exportFinanceReportPdf = () => {
+    const filteredInvoices = yearScopedFinanceInvoices.filter((item) => {
+      const statusMatch = reportForms.finance.status === 'All' || item.status === reportForms.finance.status;
+      const overdueMatch = !reportForms.finance.includeOverdueOnly
+        || (item.status !== 'Paid' && String(item.dueDate || '') < new Date().toISOString().slice(0, 10));
+      return statusMatch && overdueMatch;
+    });
+
+    if (!filteredInvoices.length) {
+      alert('No finance rows found for the selected filters.');
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 12;
+    const contentWidth = pageWidth - (margin * 2);
+    const green = [15, 118, 110];
+    const blue = [29, 78, 216];
+    const generatedAt = new Date().toISOString().slice(0, 10);
+
+    const totalAmount = filteredInvoices.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const paidCount = filteredInvoices.filter((item) => item.status === 'Paid').length;
+    const unpaidCount = filteredInvoices.length - paidCount;
+    const overdueCount = filteredInvoices.filter((item) => item.status !== 'Paid' && String(item.dueDate || '') < generatedAt).length;
+
+    doc.setFillColor(green[0], green[1], green[2]);
+    doc.rect(margin, 12, contentWidth, 14, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.text(`${schoolProfile.schoolName} - FINANCE RECONCILIATION REPORT`, pageWidth / 2, 21, { align: 'center' });
+
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    doc.text(`Academic Session: ${reportAcademicYearFilter}`, margin, 34);
+    doc.text(`Term: ${schoolProfile.currentTerm}`, margin + 74, 34);
+    doc.text(`Status Filter: ${reportForms.finance.status}`, margin, 40);
+    doc.text(`Scope: ${reportForms.finance.includeOverdueOnly ? 'Overdue Only' : 'All Matched Invoices'}`, margin + 74, 40);
+    doc.text(`Generated: ${generatedAt}`, margin + 148, 40);
+
+    const cardsY = 46;
+    const cardGap = 3;
+    const cardWidth = (contentWidth - (cardGap * 3)) / 4;
+    const cardHeight = 18;
+    const cards = [
+      { label: 'Invoices', value: String(filteredInvoices.length), fill: [240, 249, 255] },
+      { label: 'Total Amount', value: formatCurrency(totalAmount), fill: [236, 253, 245] },
+      { label: 'Paid / Unpaid', value: `${paidCount} / ${unpaidCount}`, fill: [239, 246, 255] },
+      { label: 'Overdue', value: String(overdueCount), fill: [254, 242, 242] }
+    ];
+
+    cards.forEach((card, index) => {
+      const x = margin + ((cardWidth + cardGap) * index);
+      doc.setDrawColor(209, 213, 219);
+      doc.setFillColor(card.fill[0], card.fill[1], card.fill[2]);
+      doc.rect(x, cardsY, cardWidth, cardHeight, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.2);
+      doc.text(card.label, x + 3, cardsY + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.text(String(card.value), x + 3, cardsY + 13);
+    });
+
+    let y = 70;
+    doc.setFillColor(blue[0], blue[1], blue[2]);
+    doc.rect(margin, y, contentWidth, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text('INVOICE RECONCILIATION DETAILS', margin + 3, y + 5.5);
+    y += 10;
+
+    const headers = ['Invoice', 'Student', 'Class', 'Amount', 'Due Date', 'Status'];
+    const cols = [26, 44, 28, 26, 28, 24];
+    const tableWidth = cols.reduce((sum, width) => sum + width, 0);
+    const rowHeight = 7;
+
+    const drawTableHeader = () => {
+      doc.setFillColor(31, 41, 55);
+      doc.rect(margin, y, tableWidth, rowHeight, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      let x = margin;
+      headers.forEach((header, index) => {
+        doc.text(header, x + 1.5, y + 4.6);
+        x += cols[index];
+      });
+      y += rowHeight;
+    };
+
+    drawTableHeader();
+
+    filteredInvoices.forEach((item, index) => {
+      if (y > pageHeight - 18) {
+        doc.addPage();
+        y = 16;
+        drawTableHeader();
+      }
+
+      const fill = index % 2 === 0 ? 248 : 255;
+      doc.setFillColor(fill, fill, fill);
+      doc.setDrawColor(220, 224, 230);
+      doc.rect(margin, y, tableWidth, rowHeight, 'FD');
+      doc.setTextColor(17, 24, 39);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.4);
+
+      const rowValues = [
+        String(item.invoiceNo || '-').slice(0, 14),
+        String(item.student || '-').slice(0, 24),
+        String(item.className || '-').slice(0, 14),
+        formatCurrency(item.amount),
+        String(item.dueDate || '-'),
+        String(item.status || '-')
+      ];
+
+      let x = margin;
+      rowValues.forEach((value, valueIndex) => {
+        doc.text(value, x + 1.5, y + 4.7);
+        x += cols[valueIndex];
+      });
+
+      y += rowHeight;
+    });
+
+    doc.setFontSize(8.5);
+    doc.setTextColor(71, 84, 103);
+    doc.text(`Generated by ${profileForEdit.name} on ${generatedAt}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+    doc.save('admin-finance-reconciliation.pdf');
   };
 
   const exportFinanceCsv = () => {
@@ -3321,15 +4133,15 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
     doc.text(String(schoolProfile.location || 'Douala - Cameroon'), pageWidth / 2, 40, { align: 'center' });
 
     doc.setFillColor(green[0], green[1], green[2]);
-    doc.rect(14, 45, pageWidth - 76, 11, 'F');
+    doc.rect(14, 45, pageWidth - 28, 11, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-    doc.text('BULLETIN DE NOTES / REPORT CARD', pageWidth / 2 - 16, 52, { align: 'center' });
+    doc.text('BULLETIN DE NOTES / REPORT CARD', pageWidth / 2, 52, { align: 'center' });
     doc.setTextColor(0, 0, 0);
 
     doc.setFillColor(250, 250, 250);
-    doc.rect(14, 57, pageWidth - 76, 9, 'F');
+    doc.rect(14, 57, pageWidth - 28, 9, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
     doc.text(`Academic Year: ${schoolProfile.currentSession}`, 18, 63);
@@ -3554,6 +4366,201 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
     doc.save(`class-report-cards-${safeClass}-${safeSection}.pdf`);
   };
 
+  const printIdCards = () => {
+    if (idCardClassFilter === 'All') {
+      alert('Please select a class in the ID card filters before printing full-class cards.');
+      return;
+    }
+
+    if (!idCardRows.length) {
+      alert('No students found for the selected ID card filters.');
+      return;
+    }
+
+    const popup = window.open('', '_blank', 'width=1300,height=900');
+    if (!popup) {
+      alert('Unable to open print window. Please allow pop-ups and try again.');
+      return;
+    }
+
+    const escapeHtml = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    const schoolName = escapeHtml(String(schoolProfile.schoolName || 'SUCCESS ACADEMY').toUpperCase());
+    const logoUrl = escapeHtml(schoolProfile.logoUrl || '');
+    const session = escapeHtml(schoolProfile.currentSession || '2025/2026');
+    const contactPhone = escapeHtml(schoolProfile.contactPhone || '+237 677000000');
+    const contactEmail = escapeHtml(schoolProfile.contactEmail || 'info@school.edu');
+    const address = escapeHtml(schoolProfile.address || 'P.O. BOX 123');
+    const city = escapeHtml(schoolProfile.city || 'Bamenda');
+
+    const cardsMarkup = idCardRows.map((student) => {
+      const studentName = escapeHtml(student.name);
+      const studentClass = escapeHtml(student.className || '-');
+      const idNumber = escapeHtml(student.idNumber || '-');
+      const subSchool = escapeHtml(student.section || '-');
+      const dob = escapeHtml(formatDisplayDate(student.dateOfBirth, '-'));
+      const avatar = escapeHtml(student.avatar || '');
+      const qrUrl = escapeHtml(student.qrUrl || '');
+
+      return `
+        <article class="id-print-pair">
+          <div class="id-card id-front">
+            <div class="id-head">
+              <img src="${logoUrl}" alt="School logo" />
+              <strong>${schoolName}</strong>
+            </div>
+            <div class="id-front-body">
+              <img class="id-photo" src="${avatar}" alt="${studentName}" />
+              <div class="id-meta">
+                <h4>${studentName}</h4>
+                <p><span>Matricule:</span> ${idNumber}</p>
+                <p><span>Class:</span> ${studentClass}</p>
+                <p><span>Sub-School:</span> ${subSchool}</p>
+                <p><span>Date of Birth:</span> ${dob}</p>
+                <p><span>Academic Year:</span> ${session}</p>
+              </div>
+            </div>
+            <div class="id-signature">
+              <small>Student Signature</small>
+              <div class="line"></div>
+            </div>
+          </div>
+
+          <div class="id-card id-back">
+            <img class="id-watermark" src="${logoUrl}" alt="" />
+            <div class="id-back-top">
+              <img class="id-qr" src="${qrUrl}" alt="${studentName} QR" />
+              <p>Scan to Verify Student ID</p>
+            </div>
+            <h3>ID: ${idNumber}</h3>
+            <div class="id-contact">
+              <strong>${schoolName}</strong>
+              <p>${address}</p>
+              <p>${city}</p>
+              <p>Tel: ${contactPhone}</p>
+              <p>Email: ${contactEmail}</p>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    popup.document.write(`
+      <!doctype html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <title>ID Cards - ${schoolName}</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; padding: 14px; background: #f4f5f7; font-family: Arial, Helvetica, sans-serif; color: #1f2937; }
+            .id-print-wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(720px, 1fr)); gap: 12px; }
+            .id-print-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; break-inside: avoid; }
+            .id-card { position: relative; border: 1px solid #d6dbe8; border-radius: 14px; background: #fff; min-height: 236px; overflow: hidden; }
+            .id-head { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-bottom: 6px solid #1e3a8a; }
+            .id-head img { width: 46px; height: 46px; object-fit: contain; }
+            .id-head strong { font-size: 20px; color: #102a56; letter-spacing: .3px; }
+            .id-front-body { display: grid; grid-template-columns: 104px 1fr; gap: 10px; padding: 10px; }
+            .id-photo { width: 100%; height: 124px; object-fit: cover; border: 1px solid #cfd7e7; border-radius: 6px; background: #f4f8ff; }
+            .id-meta h4 { margin: 2px 0 7px; font-size: 27px; color: #1f2937; }
+            .id-meta p { margin: 0; padding: 3px 0; border-bottom: 1px solid #edf1f8; font-size: 13px; }
+            .id-meta span { font-weight: 700; color: #111827; margin-right: 5px; }
+            .id-signature { padding: 0 10px 10px; display: grid; gap: 5px; }
+            .id-signature small { color: #6b7280; font-style: italic; }
+            .id-signature .line { height: 1px; background: #c8cfdd; }
+            .id-back { padding: 10px; }
+            .id-watermark { position: absolute; right: 10px; top: 18px; width: 164px; opacity: .08; }
+            .id-back-top { display: grid; justify-items: start; gap: 6px; }
+            .id-qr { width: 92px; height: 92px; border: 1px solid #d9e1ee; border-radius: 4px; }
+            .id-back-top p { margin: 0; font-size: 13px; color: #374151; }
+            .id-back h3 { margin: 8px 0 10px; font-size: 42px; color: #17366c; letter-spacing: .7px; }
+            .id-contact strong { display: block; font-size: 24px; margin-bottom: 6px; color: #172554; }
+            .id-contact p { margin: 3px 0; font-size: 14px; color: #374151; }
+            @media print {
+              body { background: #fff; padding: 0; }
+              .id-print-wrap { grid-template-columns: 1fr; gap: 6mm; }
+              .id-print-pair { page-break-inside: avoid; }
+              .id-card { border-color: #ccd5e4; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="id-print-wrap">${cardsMarkup}</div>
+        </body>
+      </html>
+    `);
+
+    popup.document.close();
+    popup.focus();
+    window.setTimeout(() => {
+      popup.print();
+    }, 350);
+  };
+
+  const publishReportCardsToPortal = (rows = []) => {
+    if (!Array.isArray(rows) || !rows.length) {
+      alert('No students available to publish report cards for the current results filter.');
+      return;
+    }
+
+    const term = String(schoolProfile.currentTerm || 'Term 1');
+    const sequence = 'Sequence 1';
+    const academicYear = String(schoolProfile.currentSession || '2025/2026');
+    const publishedAt = new Date().toISOString().slice(0, 10);
+
+    const payload = rows.map((studentRow) => {
+      const subjectRows = (studentResultDetailsByName[studentRow.name] || []).map((subjectRow) => {
+        const classSubjectKey = `${studentRow.className}__${studentRow.section}__${subjectRow.subject}`.toLowerCase();
+        const allSectionSubjectKey = `${studentRow.className}__all__${subjectRow.subject}`.toLowerCase();
+        const globalSubjectKey = `all__all__${subjectRow.subject}`.toLowerCase();
+        const coefficient = Number(
+          subjectCoefficientLookup[classSubjectKey]
+          || subjectCoefficientLookup[allSectionSubjectKey]
+          || subjectCoefficientLookup[globalSubjectKey]
+          || 1
+        );
+
+        return {
+          subject: subjectRow.subject,
+          score: Number(subjectRow.score || 0),
+          grade: subjectRow.grade || getGradeFromAverage(subjectRow.score),
+          coefficient
+        };
+      });
+
+      return {
+        id: Date.now() + studentRow.id,
+        studentId: studentRow.id,
+        studentName: studentRow.name,
+        matricule: studentRow.matricule,
+        parentName: studentRow.parent,
+        className: studentRow.className,
+        section: studentRow.section,
+        academicYear,
+        term,
+        sequence,
+        average: Number(studentRow.average || 0),
+        grade: studentRow.grade,
+        band: studentRow.band,
+        rank: Number(studentRow.rank || 0),
+        classSize: Number(studentRow.classSize || 0),
+        attendance: Number(studentRow.attendance || 0),
+        classTeacher: studentRow.classTeacher,
+        publishedAt,
+        publishedBy: profileForEdit.name,
+        subjects: subjectRows
+      };
+    });
+
+    publishReportCards(payload);
+    setNotice(`Published ${payload.length} report card${payload.length > 1 ? 's' : ''} to student and parent portals (view-only).`);
+  };
+
   const exportClassPerformancePdf = () => {
     if (resultClassFilter === 'All') {
       alert('Please select a class in the Results filters before exporting class performance PDF.');
@@ -3566,15 +4573,33 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
     }
 
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 12;
+    const contentWidth = pageWidth - (margin * 2);
+    const green = [15, 118, 110];
+    const blue = [29, 78, 216];
 
-    doc.setFontSize(16);
-    doc.text(`${schoolProfile.schoolName} - Class Performance Statistics`, 14, 20);
-    doc.setFontSize(11);
-    doc.text(`Academic Session: ${schoolProfile.currentSession}`, 14, 30);
-    doc.text(`Term: ${schoolProfile.currentTerm}`, 14, 37);
-    doc.text(`Class Filter: ${resultClassFilter}`, 14, 44);
-    doc.text(`Sub-School Filter: ${resultSectionFilter}`, 14, 51);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+
+    doc.setFillColor(green[0], green[1], green[2]);
+    doc.rect(margin, 12, contentWidth, 14, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(14);
+    doc.text(`${schoolProfile.schoolName} - CLASS PERFORMANCE STATISTICS`, pageWidth / 2, 21, { align: 'center' });
+
+    doc.setDrawColor(220, 224, 230);
+    doc.setFillColor(248, 250, 252);
+    doc.rect(margin, 29, contentWidth, 24, 'FD');
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text(`Academic Session: ${schoolProfile.currentSession}`, margin + 4, 36);
+    doc.text(`Term: ${schoolProfile.currentTerm}`, margin + 4, 42);
+    doc.text(`Class Filter: ${resultClassFilter}`, margin + 4, 48);
+    doc.text(`Sub-School Filter: ${resultSectionFilter}`, margin + 90, 48);
 
     const groupedByClass = classScopeRankedRows.reduce((accumulator, item) => {
       const key = buildClassKey(item.className, item.section);
@@ -3585,45 +4610,126 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
       return accumulator;
     }, {});
 
-    let y = 62;
+    let y = 58;
     Object.values(groupedByClass).forEach((classRows) => {
       const first = classRows[0];
       const average = Number((classRows.reduce((sum, item) => sum + item.average, 0) / classRows.length).toFixed(1));
       const passRate = Math.round((classRows.filter((item) => item.average >= 10).length / classRows.length) * 100);
+      const failedRate = Math.max(0, 100 - passRate);
       const top = classRows[0];
 
-      if (y > pageHeight - 70) {
+      if (y > pageHeight - 95) {
         doc.addPage();
         y = 20;
       }
 
-      doc.setFontSize(12);
-      doc.text(`${first.className} - ${first.section}`, 14, y);
-      y += 7;
-      doc.setFontSize(10);
-      doc.text(`Class Teacher: ${first.classTeacher}`, 14, y);
-      doc.text(`Students: ${classRows.length}`, 92, y);
-      y += 6;
-      doc.text(`Class Average: ${average}/20`, 14, y);
-      doc.text(`Pass Rate: ${passRate}%`, 92, y);
-      doc.text(`Top Student: ${top.name} (${top.average}/20)`, 130, y);
-      y += 8;
+      doc.setFillColor(15, 23, 42);
+      doc.rect(margin, y, contentWidth, 10, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11.5);
+      doc.text(`${first.className} - ${first.section}`, margin + 4, y + 6.7);
+      y += 13;
 
-      classRows.forEach((studentRow) => {
-        if (y > pageHeight - 12) {
+      const cardGap = 3;
+      const cardWidth = (contentWidth - (cardGap * 2)) / 3;
+      doc.setDrawColor(209, 213, 219);
+      doc.setTextColor(17, 24, 39);
+
+      doc.setFillColor(240, 249, 255);
+      doc.rect(margin, y, cardWidth, 18, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.text('Class Teacher', margin + 3, y + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.text(first.classTeacher, margin + 3, y + 13.5);
+
+      doc.setFillColor(236, 253, 245);
+      doc.rect(margin + cardWidth + cardGap, y, cardWidth, 18, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.text('Students / Pass-Fail', margin + cardWidth + cardGap + 3, y + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${classRows.length} Students • ${passRate}% / ${failedRate}%`, margin + cardWidth + cardGap + 3, y + 13.5);
+
+      doc.setFillColor(239, 246, 255);
+      doc.rect(margin + ((cardWidth + cardGap) * 2), y, cardWidth, 18, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.text('Average / Top Student', margin + ((cardWidth + cardGap) * 2) + 3, y + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`${average}/20 • ${top.name}`, margin + ((cardWidth + cardGap) * 2) + 3, y + 13.5);
+
+      y += 23;
+
+      const tableCols = [12, 56, 26, 18, 42];
+      const tableX = margin;
+      const tableWidth = tableCols.reduce((sum, width) => sum + width, 0);
+      const rowHeight = 7;
+
+      doc.setFillColor(blue[0], blue[1], blue[2]);
+      doc.rect(tableX, y, tableWidth, rowHeight, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9.5);
+      const headers = ['#', 'Student', 'Average', 'Grade', 'Band'];
+      let headerX = tableX;
+      headers.forEach((header, headerIndex) => {
+        doc.text(header, headerX + (tableCols[headerIndex] / 2), y + 4.8, { align: 'center' });
+        headerX += tableCols[headerIndex];
+      });
+      y += rowHeight;
+
+      classRows.forEach((studentRow, index) => {
+        if (y > pageHeight - 14) {
           doc.addPage();
           y = 20;
+          doc.setFillColor(blue[0], blue[1], blue[2]);
+          doc.rect(tableX, y, tableWidth, rowHeight, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(255, 255, 255);
+          headerX = tableX;
+          headers.forEach((header, headerIndex) => {
+            doc.text(header, headerX + (tableCols[headerIndex] / 2), y + 4.8, { align: 'center' });
+            headerX += tableCols[headerIndex];
+          });
+          y += rowHeight;
         }
-        doc.text(
-          `${studentRow.rank}. ${studentRow.name} | Avg: ${studentRow.average.toFixed(1)}/20 | Grade: ${studentRow.grade} | Band: ${studentRow.band}`,
-          16,
-          y
-        );
-        y += 6;
+
+        doc.setFillColor(index % 2 === 0 ? 248 : 255, index % 2 === 0 ? 250 : 255, index % 2 === 0 ? 252 : 255);
+        doc.rect(tableX, y, tableWidth, rowHeight, 'F');
+        doc.setDrawColor(229, 231, 235);
+        doc.rect(tableX, y, tableWidth, rowHeight);
+
+        let colX = tableX;
+        const values = [
+          String(studentRow.rank),
+          studentRow.name,
+          `${studentRow.average.toFixed(1)}/20`,
+          studentRow.grade,
+          studentRow.band
+        ];
+
+        doc.setTextColor(17, 24, 39);
+        doc.setFont('helvetica', 'normal');
+        values.forEach((value, valueIndex) => {
+          const align = valueIndex === 1 ? 'left' : 'center';
+          const textX = align === 'left' ? colX + 2 : colX + (tableCols[valueIndex] / 2);
+          doc.text(String(value), textX, y + 4.8, { align });
+          colX += tableCols[valueIndex];
+          if (valueIndex < tableCols.length - 1) {
+            doc.line(colX, y, colX, y + rowHeight);
+          }
+        });
+
+        y += rowHeight;
       });
 
-      y += 6;
+      y += 8;
     });
+
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(75, 85, 99);
+    doc.setFontSize(8.5);
+    doc.text(`Generated on ${new Date().toISOString().slice(0, 10)} • EduIgnite Performance Analytics`, pageWidth / 2, pageHeight - 8, { align: 'center' });
 
     const safeClass = String(resultClassFilter).replace(/[^a-z0-9]+/gi, '-').toLowerCase();
     const safeSection = resultSectionFilter === 'All'
@@ -4100,6 +5206,115 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
           </select>
         </label>
       </div>
+
+      <article className="admin-card admin-chart-section">
+        <div className="section-header compact">
+          <h3>Admin Enrollment & Tab Allocation</h3>
+          <p>Enroll multiple admins and assign the exact tabs they are allowed to manage.</p>
+        </div>
+
+        <div className="admin-control-grid">
+          <label>
+            Admin Full Name
+            <input
+              type="text"
+              value={adminEnrollmentDraft.name}
+              onChange={(event) => setAdminEnrollmentDraft((prev) => ({ ...prev, name: event.target.value }))}
+              placeholder="e.g. Miriam Neba"
+            />
+          </label>
+          <label>
+            Email
+            <input
+              type="email"
+              value={adminEnrollmentDraft.email}
+              onChange={(event) => setAdminEnrollmentDraft((prev) => ({ ...prev, email: event.target.value }))}
+              placeholder="admin@school.edu"
+            />
+          </label>
+          <label>
+            Phone
+            <input
+              type="text"
+              value={adminEnrollmentDraft.phone}
+              onChange={(event) => setAdminEnrollmentDraft((prev) => ({ ...prev, phone: event.target.value }))}
+              placeholder="677000123"
+            />
+          </label>
+          <label>
+            Sub-School
+            <select
+              value={adminEnrollmentDraft.section}
+              onChange={(event) => setAdminEnrollmentDraft((prev) => ({ ...prev, section: event.target.value }))}
+            >
+              {sectionOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-field-span">
+            Manageable Tabs (Ctrl/Cmd + Click for multiple)
+            <select
+              multiple
+              value={adminEnrollmentDraft.managedTabs}
+              onChange={(event) => setAdminEnrollmentDraft((prev) => ({ ...prev, managedTabs: getMultiSelectValues(event) }))}
+            >
+              {ADMIN_TAB_ACCESS_OPTIONS.map((tab) => (
+                <option key={tab.key} value={tab.key}>{tab.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="admin-actions">
+          <button type="button" onClick={enrollAdminFromAdmin}>Enroll Admin</button>
+        </div>
+
+        <div className="admin-table-wrap" style={{ marginTop: 10 }}>
+          <table>
+            <thead>
+              <tr>
+                <th>Admin</th>
+                <th>Email</th>
+                <th>Sub-School</th>
+                <th>Managed Tabs</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {managedAdmins.map((item) => {
+                const assignedTabs = (item.managedTabs && item.managedTabs.length)
+                  ? item.managedTabs
+                  : ADMIN_TAB_ACCESS_OPTIONS.map((tab) => tab.key);
+                return (
+                  <tr key={item.id}>
+                    <td>{item.name}</td>
+                    <td>{item.email}</td>
+                    <td>{item.section || 'Unassigned'}</td>
+                    <td>
+                      <select
+                        multiple
+                        value={assignedTabs}
+                        onChange={(event) => updateAdminManagedTabs(item.id, getMultiSelectValues(event))}
+                      >
+                        {ADMIN_TAB_ACCESS_OPTIONS.map((tab) => (
+                          <option key={tab.key} value={tab.key}>{tab.label}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td><span className={`admin-badge ${String(item.status || 'active').toLowerCase().replace(' ', '-')}`}>{item.status || 'Active'}</span></td>
+                  </tr>
+                );
+              })}
+              {!managedAdmins.length && (
+                <tr>
+                  <td colSpan="5" className="attendance-empty">No admin accounts enrolled yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </article>
 
       <div className="admin-table-wrap">
         <table>
@@ -6361,8 +7576,8 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
       <div className="admin-kpi-row compact">
         <article><span>Whole School Average</span><strong>{schoolPerformanceStats.average}/20</strong></article>
         <article><span>Pass Rate</span><strong>{schoolPerformanceStats.passRate}%</strong></article>
+        <article><span>Failed Rate</span><strong>{schoolPerformanceStats.failedRate}%</strong></article>
         <article><span>Top Performer</span><strong>{schoolPerformanceStats.topStudent}</strong></article>
-        <article><span>At Risk</span><strong>{schoolPerformanceStats.atRisk}</strong></article>
       </div>
 
       <div className="admin-card results-control-card">
@@ -6414,7 +7629,9 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
           />
         </label>
         <button type="button" className="results-print-btn" onClick={printClassReportCards}>Print Class Report Cards</button>
+        <button type="button" className="results-print-btn" onClick={() => publishReportCardsToPortal(rankedStudentsSource)}>Publish Report Cards</button>
         <button type="button" className="results-download-btn" onClick={exportClassPerformancePdf}>Download Class Performance PDF</button>
+        <button type="button" className="results-download-btn" onClick={exportSchoolPerformancePdf}>Download School Performance Report</button>
         <button
           type="button"
           className="row-action"
@@ -6435,7 +7652,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
         <article><span>Filtered Students</span><strong>{filteredResultSummary.students}</strong></article>
         <article><span>Filtered Average</span><strong>{filteredResultSummary.average}/20</strong></article>
         <article><span>Filtered Pass Rate</span><strong>{filteredResultSummary.passRate}%</strong></article>
-        <article><span>Filtered Excellent</span><strong>{filteredResultSummary.excellent}</strong></article>
+        <article><span>Filtered Failed Rate</span><strong>{filteredResultSummary.failedRate}%</strong></article>
       </div>
 
       <div className="admin-table-wrap">
@@ -6447,6 +7664,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
               <th>Classes</th>
               <th>Average</th>
               <th>Pass Rate</th>
+              <th>Failed Rate</th>
               <th>Top Student</th>
             </tr>
           </thead>
@@ -6458,12 +7676,13 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
                 <td>{item.classes}</td>
                 <td>{item.average}/20</td>
                 <td>{item.passRate}%</td>
+                <td>{item.failedRate}%</td>
                 <td>{item.topStudent}</td>
               </tr>
             ))}
             {!filteredSectionPerformanceStats.length && (
               <tr>
-                <td colSpan="6" className="attendance-empty">No subschool performance records available for this filter.</td>
+                <td colSpan="7" className="attendance-empty">No subschool performance records available for this filter.</td>
               </tr>
             )}
           </tbody>
@@ -6480,6 +7699,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
               <th>Students</th>
               <th>Average</th>
               <th>Pass Rate</th>
+              <th>Failed Rate</th>
               <th>Top Student</th>
             </tr>
           </thead>
@@ -6492,12 +7712,13 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
                 <td>{item.students}</td>
                 <td>{item.average}/20</td>
                 <td>{item.passRate}%</td>
+                <td>{item.failedRate}%</td>
                 <td>{item.topStudent}</td>
               </tr>
             ))}
             {!filteredClassPerformanceStats.length && (
               <tr>
-                <td colSpan="7" className="attendance-empty">No class performance records available for this filter.</td>
+                <td colSpan="8" className="attendance-empty">No class performance records available for this filter.</td>
               </tr>
             )}
           </tbody>
@@ -6550,62 +7771,6 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
         </table>
       </div>
       {renderPaginationControls('results-ranked', resultsPageData, 'ranked students')}
-    </section>
-    );
-  };
-
-  const renderFees = () => {
-    const feesPageData = getPaginatedData('fees', fees);
-    return (
-    <section className="admin-panel">
-      <div className="section-header">
-        <h2>Fees Structure</h2>
-        <p>Manage school fees policy and fee items used in invoice generation.</p>
-      </div>
-
-      <div className="admin-kpi-row compact">
-        <article><span>Total Fee Items</span><strong>{feeSummary.total}</strong></article>
-        <article><span>Active</span><strong>{feeSummary.active}</strong></article>
-        <article><span>Mandatory</span><strong>{feeSummary.mandatory}</strong></article>
-        <article><span>Total Value</span><strong>{formatCurrency(feeSummary.amountTotal)}</strong></article>
-      </div>
-
-      <div className="admin-actions" style={{ marginBottom: 10 }}>
-        <button type="button" className="row-action" onClick={() => exportCsv(fees, 'admin-fee-structure.csv')}>Export Fee Structure CSV</button>
-      </div>
-
-      <div className="admin-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Level</th>
-              <th>Term</th>
-              <th>Amount</th>
-              <th>Mandatory</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {feesPageData.pageItems.map((item) => (
-              <tr key={item.id}>
-                <td>{item.item}</td>
-                <td>{item.level}</td>
-                <td>{item.term}</td>
-                <td>{formatCurrency(item.amount)}</td>
-                <td>{item.mandatory ? 'Yes' : 'No'}</td>
-                <td><span className={`admin-badge ${item.status.toLowerCase()}`}>{item.status}</span></td>
-              </tr>
-            ))}
-            {!feesPageData.pageItems.length && (
-              <tr>
-                <td colSpan="6" className="attendance-empty">No fee items configured.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      {renderPaginationControls('fees', feesPageData, 'fee items')}
     </section>
     );
   };
@@ -6696,11 +7861,30 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
 
   const renderAnnouncements = () => {
     const announcementsPageData = getPaginatedData('announcements', announcements);
+    const today = new Date().toISOString().slice(0, 10);
+    const announcementSummary = {
+      total: announcements.length,
+      today: announcements.filter((item) => String(item.date || '') === today).length,
+      urgent: announcements.filter((item) => String(item.type || '').toLowerCase() === 'emergency').length,
+      audiences: new Set(announcements.map((item) => item.audience).filter(Boolean)).size
+    };
+
     return (
     <section className="admin-panel">
       <div className="section-header">
         <h2>Announcements</h2>
         <p>Broadcast policy updates and critical notices to all school actors.</p>
+      </div>
+
+      <div className="admin-kpi-row compact">
+        <article><span>Total Announcements</span><strong>{announcementSummary.total}</strong></article>
+        <article><span>Posted Today</span><strong>{announcementSummary.today}</strong></article>
+        <article><span>Emergency</span><strong>{announcementSummary.urgent}</strong></article>
+        <article><span>Audience Groups</span><strong>{announcementSummary.audiences}</strong></article>
+      </div>
+
+      <div className="admin-actions" style={{ marginBottom: 10 }}>
+        <button type="button" className="row-action" onClick={() => exportCsv(announcements, 'admin-announcements.csv')}>Export Announcements CSV</button>
       </div>
 
       <div className="admin-compose-grid">
@@ -6758,15 +7942,35 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
         <button type="button" onClick={publishAnnouncement}>Publish Announcement</button>
       </div>
 
-      <ul className="admin-feed-list">
-        {announcementsPageData.pageItems.map((item) => (
-          <li key={item.id}>
-            <strong>{item.title}</strong>
-            <p>{item.message}</p>
-            <small>{item.type} • {item.audience} • {item.date}</small>
-          </li>
-        ))}
-      </ul>
+      <div className="admin-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Audience</th>
+              <th>Date</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            {announcementsPageData.pageItems.map((item) => (
+              <tr key={item.id}>
+                <td>{item.title}</td>
+                <td>{item.type}</td>
+                <td>{item.audience}</td>
+                <td>{item.date}</td>
+                <td>{item.message}</td>
+              </tr>
+            ))}
+            {!announcementsPageData.pageItems.length && (
+              <tr>
+                <td colSpan="5" className="attendance-empty">No announcements available.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
       {renderPaginationControls('announcements', announcementsPageData, 'announcements')}
     </section>
     );
@@ -6790,6 +7994,49 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
 
       <div className="admin-actions" style={{ marginBottom: 10 }}>
         <button type="button" className="row-action" onClick={() => exportCsv(events, 'admin-events.csv')}>Export Events CSV</button>
+      </div>
+
+      <div className="admin-compose-grid compact">
+        <label>
+          Event Title
+          <input
+            type="text"
+            value={newEvent.title}
+            onChange={(event) => setNewEvent((prev) => ({ ...prev, title: event.target.value }))}
+            placeholder="e.g. Mid-Term PTA Meeting"
+          />
+        </label>
+        <label>
+          Date
+          <input
+            type="date"
+            value={newEvent.date}
+            onChange={(event) => setNewEvent((prev) => ({ ...prev, date: event.target.value }))}
+          />
+        </label>
+        <label>
+          Category
+          <select
+            value={newEvent.category}
+            onChange={(event) => setNewEvent((prev) => ({ ...prev, category: event.target.value }))}
+          >
+            <option>Academic</option>
+            <option>Community</option>
+            <option>Guidance</option>
+            <option>Sports</option>
+            <option>Cultural</option>
+          </select>
+        </label>
+        <label>
+          Organizer
+          <input
+            type="text"
+            value={newEvent.organizer}
+            onChange={(event) => setNewEvent((prev) => ({ ...prev, organizer: event.target.value }))}
+            placeholder="Administration"
+          />
+        </label>
+        <button type="button" onClick={addEvent}>Add Event</button>
       </div>
 
       <div className="admin-table-wrap">
@@ -6825,96 +8072,108 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
   };
 
   const renderMessages = () => {
-    const messagesPageData = getPaginatedData('messages', filteredMessages);
+    return <Messages />;
+  };
+
+  const renderIdCards = () => {
+    const selectedClassCount = idCardClassFilter === 'All'
+      ? new Set(idCardRows.map((item) => item.className).filter(Boolean)).size
+      : 1;
+    const selectedSectionCount = idCardSectionFilter === 'All'
+      ? new Set(idCardRows.map((item) => item.section).filter(Boolean)).size
+      : 1;
+
     return (
-    <section className="admin-panel">
-      <div className="section-header">
-        <h2>Messages</h2>
-        <p>Coordinate all internal and external communication channels for your school.</p>
-      </div>
+      <section className="admin-panel">
+        <div className="section-header">
+          <h2>ID Cards</h2>
+          <p>Generate professional front-and-back student ID cards and print full class batches at once.</p>
+        </div>
 
-      <div className="admin-control-grid">
-        <label>
-          Search
-          <input
-            type="text"
-            value={globalSearch}
-            onChange={(event) => setGlobalSearch(event.target.value)}
-            placeholder="Search messages"
-          />
-        </label>
-        <label>
-          Priority
-          <select
-            value={messagePriorityFilter}
-            onChange={(event) => setMessagePriorityFilter(event.target.value)}
-          >
-            <option>All</option>
-            <option>High</option>
-            <option>Normal</option>
-          </select>
-        </label>
-      </div>
+        <div className="admin-kpi-row compact">
+          <article><span>Cards in Preview</span><strong>{idCardRows.length}</strong></article>
+          <article><span>Class Scope</span><strong>{selectedClassCount}</strong></article>
+          <article><span>Sub-School Scope</span><strong>{selectedSectionCount}</strong></article>
+          <article><span>Academic Year</span><strong>{schoolProfile.currentSession}</strong></article>
+        </div>
 
-      <div className="admin-compose-grid compact">
-        <label>
-          To
-          <select
-            value={newMessage.to}
-            onChange={(event) => setNewMessage((prev) => ({ ...prev, to: event.target.value }))}
-          >
-            <option>Teachers</option>
-            <option>Parents</option>
-            <option>Students</option>
-            <option>Staff</option>
-            <option>All Users</option>
-          </select>
-        </label>
-        <label>
-          Channel
-          <select
-            value={newMessage.channel}
-            onChange={(event) => setNewMessage((prev) => ({ ...prev, channel: event.target.value }))}
-          >
-            <option>Internal</option>
-            <option>Support</option>
-            <option>Academic</option>
-            <option>Finance</option>
-          </select>
-        </label>
-        <label>
-          Priority
-          <select
-            value={newMessage.priority}
-            onChange={(event) => setNewMessage((prev) => ({ ...prev, priority: event.target.value }))}
-          >
-            <option>Normal</option>
-            <option>High</option>
-          </select>
-        </label>
-        <label className="full">
-          Message
-          <textarea
-            rows="2"
-            value={newMessage.preview}
-            onChange={(event) => setNewMessage((prev) => ({ ...prev, preview: event.target.value }))}
-            placeholder="Write a message"
-          />
-        </label>
-        <button type="button" onClick={sendMessage}>Send Message</button>
-      </div>
+        <div className="admin-control-grid">
+          <label>
+            Class
+            <select value={idCardClassFilter} onChange={(event) => setIdCardClassFilter(event.target.value)}>
+              {idCardClassOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label>
+            Sub-School
+            <select value={idCardSectionFilter} onChange={(event) => setIdCardSectionFilter(event.target.value)}>
+              {idCardSectionOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+        </div>
 
-      <ul className="admin-feed-list">
-        {messagesPageData.pageItems.map((item) => (
-          <li key={item.id}>
-            <strong>{item.from} → {item.to}</strong>
-            <p>{item.preview}</p>
-            <small>{item.channel} • {item.priority} • {item.date}</small>
-          </li>
-        ))}
-      </ul>
-      {renderPaginationControls('messages', messagesPageData, 'messages')}
-    </section>
+        <div className="admin-actions" style={{ marginBottom: 12 }}>
+          <button type="button" className="results-print-btn" onClick={printIdCards}>Print Full Class ID Cards</button>
+        </div>
+
+        {idCardClassFilter === 'All' && (
+          <p className="attendance-empty" style={{ marginBottom: 12 }}>
+            Select a class first to enable full-class batch printing.
+          </p>
+        )}
+
+        <div className="admin-id-preview-grid">
+          {idCardRows.map((student) => (
+            <article key={student.id} className="admin-id-card-pair">
+              <div className="admin-id-card admin-id-front">
+                <div className="admin-id-header">
+                  <img src={schoolProfile.logoUrl} alt="School logo" />
+                  <strong>{String(schoolProfile.schoolName || 'SUCCESS ACADEMY').toUpperCase()}</strong>
+                </div>
+                <div className="admin-id-body">
+                  <img className="admin-id-photo" src={student.avatar} alt={student.name} />
+                  <div className="admin-id-meta">
+                    <h4>{student.name}</h4>
+                    <p><span>Matricule:</span> {student.idNumber}</p>
+                    <p><span>Class:</span> {student.className}</p>
+                    <p><span>Sub-School:</span> {student.section}</p>
+                    <p><span>Date of Birth:</span> {formatDisplayDate(student.dateOfBirth, '-')}</p>
+                    <p><span>Academic Year:</span> {schoolProfile.currentSession}</p>
+                  </div>
+                </div>
+                <div className="admin-id-signature">
+                  <small>Student Signature</small>
+                  <div className="line" />
+                </div>
+              </div>
+
+              <div className="admin-id-card admin-id-back">
+                <img className="admin-id-watermark" src={schoolProfile.logoUrl} alt="" />
+                <div className="admin-id-back-top">
+                  <img className="admin-id-qr" src={student.qrUrl} alt={`${student.name} QR`} />
+                  <p>Scan to Verify Student ID</p>
+                </div>
+                <h3>ID: {student.idNumber}</h3>
+                <div className="admin-id-contact">
+                  <strong>{String(schoolProfile.schoolName || 'SUCCESS ACADEMY').toUpperCase()}</strong>
+                  <p>{schoolProfile.address || 'P.O. BOX 123'}</p>
+                  <p>{schoolProfile.city || 'Bamenda'}</p>
+                  <p>Tel: {schoolProfile.contactPhone || '+237 677000000'}</p>
+                  <p>Email: {schoolProfile.contactEmail || 'info@school.edu'}</p>
+                </div>
+              </div>
+            </article>
+          ))}
+
+          {!idCardRows.length && (
+            <article className="admin-card">
+              <p className="attendance-empty" style={{ margin: 0 }}>
+                No students found for the selected class/sub-school filters.
+              </p>
+            </article>
+          )}
+        </div>
+      </section>
     );
   };
 
@@ -6950,103 +8209,314 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
     );
   };
 
-  const renderReports = () => (
-    <section className="admin-panel">
-      <div className="section-header">
-        <h2>Reports</h2>
-        <p>Generate school-wide operational, academic and financial executive reports.</p>
-      </div>
+  const renderReports = () => {
+    const isCurrentAcademicYear = reportAcademicYearFilter === (schoolProfile.currentSession || reportAcademicYearFilter);
+    const academicRows = filteredRankedStudentRowsWithSchoolRank
+      .filter(() => isCurrentAcademicYear)
+      .filter((item) => {
+        const sectionMatch = reportForms.academic.section === 'All' || item.section === reportForms.academic.section;
+        const classMatch = reportForms.academic.className === 'All' || item.className === reportForms.academic.className;
+        return sectionMatch && classMatch;
+      })
+      .map((item) => ({
+        AcademicYear: reportAcademicYearFilter,
+        Student: item.name,
+        Matricule: item.matricule,
+        Class: item.className,
+        Section: item.section,
+        Average: Number(item.average || 0).toFixed(1),
+        Grade: item.grade,
+        Rank: reportForms.academic.includeRanking ? item.rank : ''
+      }));
 
-      <div className="admin-kpi-row">
-        <article><span>Attendance Rate</span><strong>{reportData.attendanceRate}%</strong></article>
-        <article><span>Result Average</span><strong>{reportData.resultAverage}/20</strong></article>
-        <article><span>Total Billed</span><strong>{formatCurrency(reportData.billed)}</strong></article>
-        <article><span>Total Collected</span><strong>{formatCurrency(reportData.collections)}</strong></article>
-      </div>
+    const financeRows = yearScopedFinanceInvoices
+      .filter((item) => {
+        const statusMatch = reportForms.finance.status === 'All' || item.status === reportForms.finance.status;
+        const overdueMatch = !reportForms.finance.includeOverdueOnly || (item.status !== 'Paid' && String(item.dueDate || '') < new Date().toISOString().slice(0, 10));
+        return statusMatch && overdueMatch;
+      })
+      .map((item) => ({
+        AcademicYear: reportAcademicYearFilter,
+        Invoice: item.invoiceNo,
+        Student: item.student,
+        Class: item.className,
+        Amount: item.amount,
+        DueDate: item.dueDate,
+        Status: item.status
+      }));
 
-      <div className="admin-chart-grid">
-        {Object.entries(reportData.usersByRole).map(([key, value]) => (
-          <article key={key}>
-            <span>{key}</span>
-            <div><i style={{ height: `${Math.max(24, value * 14)}px` }} /></div>
-            <strong>{value}</strong>
+    const filteredGeneratedReports = generatedReports.filter((item) => (
+      item.academicYear === reportAcademicYearFilter
+    ));
+
+    return (
+      <section className="admin-panel">
+        <div className="section-header">
+          <h2>Reports</h2>
+          <p>Generate school-wide operational, academic and financial executive reports.</p>
+        </div>
+
+        <div className="admin-kpi-row">
+          <article><span>Attendance Rate</span><strong>{yearScopedReportData.attendanceRate}%</strong></article>
+          <article><span>Result Average</span><strong>{yearScopedReportData.resultAverage}/20</strong></article>
+          <article><span>Total Billed</span><strong>{formatCurrency(yearScopedReportData.billed)}</strong></article>
+          <article><span>Outstanding</span><strong>{formatCurrency(yearScopedReportData.outstanding)}</strong></article>
+        </div>
+
+        <div className="admin-control-grid" style={{ marginBottom: 12 }}>
+          <label>
+            Academic Year
+            <select
+              value={reportAcademicYearFilter}
+              onChange={(event) => setReportAcademicYearFilter(event.target.value)}
+            >
+              {reportAcademicYearOptions.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="admin-report-forms">
+          <article className="admin-report-card">
+            <div className="section-header compact">
+              <h3>Executive Summary Form</h3>
+              <p>Produce leadership-ready snapshots for oversight meetings.</p>
+            </div>
+            <div className="admin-control-grid">
+              <label>
+                Report Period
+                <select
+                  value={reportForms.executive.period}
+                  onChange={(event) => updateReportForm('executive', 'period', event.target.value)}
+                >
+                  <option>This Week</option>
+                  <option>This Term</option>
+                  <option>This Academic Year</option>
+                </select>
+              </label>
+              <label>
+                Output Format
+                <select
+                  value={reportForms.executive.output}
+                  onChange={(event) => updateReportForm('executive', 'output', event.target.value)}
+                >
+                  <option>PDF</option>
+                  <option>CSV</option>
+                </select>
+              </label>
+            </div>
+            <div className="admin-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  if (reportForms.executive.output === 'PDF') {
+                    exportReportsPdf();
+                  } else {
+                    exportCsv(
+                      [{
+                        academicYear: reportAcademicYearFilter,
+                        period: reportForms.executive.period,
+                        attendanceRate: `${yearScopedReportData.attendanceRate}%`,
+                        resultAverage: yearScopedReportData.resultAverage,
+                        billed: yearScopedReportData.billed,
+                        collections: yearScopedReportData.collections,
+                        outstanding: yearScopedReportData.outstanding
+                      }],
+                      'admin-executive-summary.csv'
+                    );
+                  }
+                  logGeneratedReport('Executive Summary', reportForms.executive.output, `${reportForms.executive.period} • ${reportAcademicYearFilter}`);
+                  setNotice(`Executive summary ${reportForms.executive.output} generated successfully.`);
+                }}
+              >
+                Generate Executive Report
+              </button>
+            </div>
           </article>
-        ))}
-      </div>
 
-      <div className="admin-actions">
-        <button type="button" onClick={exportReportsPdf}>Export PDF Report</button>
-        <button
-          type="button"
-          onClick={() => exportCsv(
-            [
-              {
-                attendanceRate: `${reportData.attendanceRate}%`,
-                resultAverage: reportData.resultAverage,
-                billed: reportData.billed,
-                collections: reportData.collections,
-                outstanding: reportData.outstanding
-              }
-            ],
-            'admin-summary.csv'
-          )}
-        >
-          Export CSV Snapshot
-        </button>
-      </div>
-    </section>
-  );
+          <article className="admin-report-card">
+            <div className="section-header compact">
+              <h3>Academic Performance Form</h3>
+              <p>Prepare class and section result performance reports.</p>
+            </div>
+            {!isCurrentAcademicYear && (
+              <p className="attendance-empty" style={{ marginBottom: 10 }}>
+                Academic score archive is only available for {schoolProfile.currentSession}. Select it to generate full academic performance rows.
+              </p>
+            )}
+            <div className="admin-control-grid">
+              <label>
+                Section
+                <select
+                  value={reportForms.academic.section}
+                  onChange={(event) => updateReportForm('academic', 'section', event.target.value)}
+                >
+                  {sectionOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Class
+                <select
+                  value={reportForms.academic.className}
+                  onChange={(event) => updateReportForm('academic', 'className', event.target.value)}
+                >
+                  {classOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Output Format
+                <select
+                  value={reportForms.academic.output}
+                  onChange={(event) => updateReportForm('academic', 'output', event.target.value)}
+                >
+                  <option>CSV</option>
+                  <option>PDF</option>
+                </select>
+              </label>
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={reportForms.academic.includeRanking}
+                  onChange={(event) => updateReportForm('academic', 'includeRanking', event.target.checked)}
+                />
+                Include ranking fields
+              </label>
+            </div>
+            <div className="admin-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!academicRows.length) {
+                    alert('No academic rows found for the selected filters.');
+                    return;
+                  }
+                  if (reportForms.academic.output === 'PDF') {
+                    exportSchoolPerformancePdf();
+                  } else {
+                    exportCsv(academicRows, 'admin-academic-performance.csv');
+                  }
+                  const scope = `${reportForms.academic.section} • ${reportForms.academic.className} • ${reportAcademicYearFilter}`;
+                  logGeneratedReport('Academic Performance', reportForms.academic.output, scope);
+                  setNotice(`Academic report ${reportForms.academic.output} generated for ${scope}.`);
+                }}
+              >
+                Generate Academic Report
+              </button>
+            </div>
+          </article>
+
+          <article className="admin-report-card">
+            <div className="section-header compact">
+              <h3>Finance Reconciliation Form</h3>
+              <p>Compile billing, paid, and overdue invoice records.</p>
+            </div>
+            <div className="admin-control-grid">
+              <label>
+                Invoice Status
+                <select
+                  value={reportForms.finance.status}
+                  onChange={(event) => updateReportForm('finance', 'status', event.target.value)}
+                >
+                  <option>All</option>
+                  <option>Paid</option>
+                  <option>Unpaid</option>
+                </select>
+              </label>
+              <label>
+                Output Format
+                <select
+                  value={reportForms.finance.output}
+                  onChange={(event) => updateReportForm('finance', 'output', event.target.value)}
+                >
+                  <option>CSV</option>
+                  <option>PDF</option>
+                </select>
+              </label>
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={reportForms.finance.includeOverdueOnly}
+                  onChange={(event) => updateReportForm('finance', 'includeOverdueOnly', event.target.checked)}
+                />
+                Include overdue invoices only
+              </label>
+            </div>
+            <div className="admin-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!financeRows.length) {
+                    alert('No finance rows found for the selected filters.');
+                    return;
+                  }
+                  if (reportForms.finance.output === 'PDF') {
+                    exportFinanceReportPdf();
+                  } else {
+                    exportCsv(financeRows, 'admin-finance-reconciliation.csv');
+                  }
+                  const scope = reportForms.finance.includeOverdueOnly
+                    ? `Overdue Only • ${reportAcademicYearFilter}`
+                    : `${reportForms.finance.status} Invoices • ${reportAcademicYearFilter}`;
+                  logGeneratedReport('Finance Reconciliation', reportForms.finance.output, scope);
+                  setNotice(`Finance report ${reportForms.finance.output} generated (${scope}).`);
+                }}
+              >
+                Generate Finance Report
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <div className="admin-chart-grid">
+          {Object.entries(yearScopedReportData.usersByRole).map(([key, value]) => (
+            <article key={key}>
+              <span>{key}</span>
+              <div><i style={{ height: `${Math.max(24, value * 14)}px` }} /></div>
+              <strong>{value}</strong>
+            </article>
+          ))}
+        </div>
+
+        <div className="admin-table-wrap admin-report-history">
+          <table>
+            <thead>
+              <tr>
+                <th>Report</th>
+                <th>Format</th>
+                <th>Academic Year</th>
+                <th>Scope</th>
+                <th>Generated On</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredGeneratedReports.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.report}</td>
+                  <td>{item.format}</td>
+                  <td>{item.academicYear || '-'}</td>
+                  <td>{item.scope}</td>
+                  <td>{item.generatedAt}</td>
+                </tr>
+              ))}
+              {!filteredGeneratedReports.length && (
+                <tr>
+                  <td colSpan="5" className="attendance-empty">No report generated for the selected academic year.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    );
+  };
 
   const renderLibrary = () => {
-    const libraryPageData = getPaginatedData('library', libraryBooks);
-    return (
-    <section className="admin-panel">
-      <div className="section-header">
-        <h2>Library</h2>
-        <p>Additional control tab to monitor stock health and library service readiness.</p>
-      </div>
-
-      <div className="admin-kpi-row compact">
-        <article><span>Titles</span><strong>{librarySummary.totalTitles}</strong></article>
-        <article><span>Total Copies</span><strong>{librarySummary.totalCopies}</strong></article>
-        <article><span>Available</span><strong>{librarySummary.availableCopies}</strong></article>
-        <article><span>Low Stock</span><strong>{librarySummary.lowStock}</strong></article>
-      </div>
-
-      <div className="admin-actions" style={{ marginBottom: 10 }}>
-        <button type="button" className="row-action" onClick={() => exportCsv(libraryBooks, 'admin-library.csv')}>Export Library CSV</button>
-      </div>
-
-      <div className="admin-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Book</th>
-              <th>Total Copies</th>
-              <th>Available</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {libraryPageData.pageItems.map((item) => (
-              <tr key={item.id}>
-                <td>{item.title}</td>
-                <td>{item.copies}</td>
-                <td>{item.available}</td>
-                <td><span className={`admin-badge ${item.status.toLowerCase().replace(' ', '-')}`}>{item.status}</span></td>
-              </tr>
-            ))}
-            {!libraryPageData.pageItems.length && (
-              <tr>
-                <td colSpan="4" className="attendance-empty">No library records available.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      {renderPaginationControls('library', libraryPageData, 'library books')}
-    </section>
-    );
+    return <Library />;
   };
 
   const renderTransport = () => {
@@ -7069,6 +8539,66 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
         <button type="button" className="row-action" onClick={() => exportCsv(transportRoutes, 'admin-transport.csv')}>Export Transport CSV</button>
       </div>
 
+      <div className="admin-compose-grid compact">
+        <label>
+          Route
+          <input
+            type="text"
+            value={transportDraft.route}
+            onChange={(event) => setTransportDraft((prev) => ({ ...prev, route: event.target.value }))}
+            placeholder="e.g. South Route"
+          />
+        </label>
+        <label>
+          Bus No
+          <input
+            type="text"
+            value={transportDraft.busNo}
+            onChange={(event) => setTransportDraft((prev) => ({ ...prev, busNo: event.target.value }))}
+            placeholder="BUS-05"
+          />
+        </label>
+        <label>
+          Driver
+          <input
+            type="text"
+            value={transportDraft.driver}
+            onChange={(event) => setTransportDraft((prev) => ({ ...prev, driver: event.target.value }))}
+            placeholder="Driver name"
+          />
+        </label>
+        <label>
+          Seats
+          <input
+            type="number"
+            min="1"
+            value={transportDraft.seats}
+            onChange={(event) => setTransportDraft((prev) => ({ ...prev, seats: event.target.value }))}
+          />
+        </label>
+        <label>
+          Occupied
+          <input
+            type="number"
+            min="0"
+            value={transportDraft.occupied}
+            onChange={(event) => setTransportDraft((prev) => ({ ...prev, occupied: event.target.value }))}
+          />
+        </label>
+        <label>
+          Status
+          <select
+            value={transportDraft.status}
+            onChange={(event) => setTransportDraft((prev) => ({ ...prev, status: event.target.value }))}
+          >
+            <option>On Schedule</option>
+            <option>Delayed</option>
+            <option>Full</option>
+          </select>
+        </label>
+        <button type="button" onClick={addTransportRoute}>Add Route</button>
+      </div>
+
       <div className="admin-table-wrap">
         <table>
           <thead>
@@ -7079,6 +8609,7 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
               <th>Capacity</th>
               <th>Occupancy</th>
               <th>Status</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -7089,12 +8620,28 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
                 <td>{item.driver}</td>
                 <td>{item.seats}</td>
                 <td>{item.occupied}</td>
-                <td><span className={`admin-badge ${item.status.toLowerCase().replace(' ', '-')}`}>{item.status}</span></td>
+                <td>
+                  <select
+                    value={item.status}
+                    onChange={(event) => updateTransportStatus(item.id, event.target.value)}
+                  >
+                    <option>On Schedule</option>
+                    <option>Delayed</option>
+                    <option>Full</option>
+                  </select>
+                </td>
+                <td>
+                  <div className="admin-row-actions">
+                    <button type="button" className="row-action" onClick={() => updateTransportOccupancy(item.id, 1)}>+1</button>
+                    <button type="button" className="row-action" onClick={() => updateTransportOccupancy(item.id, -1)}>-1</button>
+                    <button type="button" className="row-action danger" onClick={() => removeTransportRoute(item.id)}>Remove</button>
+                  </div>
+                </td>
               </tr>
             ))}
             {!transportPageData.pageItems.length && (
               <tr>
-                <td colSpan="6" className="attendance-empty">No transport routes available.</td>
+                <td colSpan="7" className="attendance-empty">No transport routes available.</td>
               </tr>
             )}
           </tbody>
@@ -7200,8 +8747,12 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
         return renderSchools();
       case 'users':
         return renderUsers();
+      case 'admin-enrolment':
+        return renderUsers();
       case 'students':
         return renderStudents();
+      case 'id-cards':
+        return renderIdCards();
       case 'parents':
         return renderSimpleRoleTable('Parents', 'Control parent account lifecycle and communication readiness.', parents, 'Parent');
       case 'teachers':
@@ -7222,8 +8773,6 @@ const AdminDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {}
         return renderExams();
       case 'results':
         return renderResults();
-      case 'fees-structure':
-        return renderFees();
       case 'invoices':
         return renderInvoices();
       case 'announcements':

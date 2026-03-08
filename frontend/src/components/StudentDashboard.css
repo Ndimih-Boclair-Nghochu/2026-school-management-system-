@@ -2236,6 +2236,10 @@
     align-items: flex-start;
   }
 
+  .student-welcome img {
+    order: -1;
+  }
+
   .student-stats {
     grid-template-columns: 1fr;
   }

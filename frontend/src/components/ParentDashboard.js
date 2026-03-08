@@ -16,6 +16,10 @@ import Header from './Header';
 import ParentSidebar from './ParentSidebar';
 import EditProfile from './EditProfile';
 import Announcements from './Announcements';
+import {
+  getPublishedReportCards,
+  REPORT_CARD_PUBLISHED_EVENT
+} from './reportCardPublications';
 import './TeacherDashboard.css';
 import './ParentDashboard.css';
 
@@ -339,6 +343,7 @@ const ParentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {
   const [notificationSearchQuery, setNotificationSearchQuery] = useState('');
   const [notificationStatusFilter, setNotificationStatusFilter] = useState('all');
   const [notificationSortBy, setNotificationSortBy] = useState('recent');
+  const [publishedReportCards, setPublishedReportCards] = useState(() => getPublishedReportCards());
 
   const profileForEdit = useMemo(() => ({
     matricule: profile?.matricule || 'PAR2026',
@@ -402,6 +407,20 @@ const ParentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {
 
   }, [selectedChildId, childrenData, profile?.name, profile?.phone]);
 
+  useEffect(() => {
+    const syncPublishedReportCards = () => {
+      setPublishedReportCards(getPublishedReportCards());
+    };
+
+    window.addEventListener(REPORT_CARD_PUBLISHED_EVENT, syncPublishedReportCards);
+    window.addEventListener('storage', syncPublishedReportCards);
+
+    return () => {
+      window.removeEventListener(REPORT_CARD_PUBLISHED_EVENT, syncPublishedReportCards);
+      window.removeEventListener('storage', syncPublishedReportCards);
+    };
+  }, []);
+
   const academicYearOptions = Array.from(new Set(academicRecords.map((item) => item.year)));
   const academicTermOptions = Array.from(new Set(
     academicRecords
@@ -438,6 +457,21 @@ const ParentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {
   );
   const passCount = selectedAcademicSubjects.filter((item) => item.total >= 10).length;
   const passRate = selectedAcademicSubjects.length ? Math.round((passCount / selectedAcademicSubjects.length) * 100) : 0;
+
+  const selectedChildPublishedCards = useMemo(() => {
+    const selectedChildName = String(selectedChild?.name || '').trim().toLowerCase();
+    const selectedChildClass = String(selectedChild?.className || '').trim().toLowerCase();
+    const parentName = String(profile?.name || '').trim().toLowerCase();
+
+    return publishedReportCards
+      .filter((item) => {
+        const sameStudent = selectedChildName && String(item.studentName || '').toLowerCase() === selectedChildName;
+        const sameClass = !selectedChildClass || String(item.className || '').toLowerCase() === selectedChildClass;
+        const sameParent = !parentName || !item.parentName || String(item.parentName || '').toLowerCase() === parentName;
+        return sameStudent && sameClass && sameParent;
+      })
+      .sort((left, right) => new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime());
+  }, [publishedReportCards, selectedChild?.name, selectedChild?.className, profile?.name]);
 
   const updateSelectedChild = (updater) => {
     setChildrenData((prev) => prev.map((item) => (
@@ -1201,6 +1235,46 @@ const ParentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {
               </p>
             </div>
 
+            <div className="parent-academic-remark" style={{ marginTop: 12 }}>
+              <strong>Published Report Cards (View Only)</strong>
+              {!selectedChildPublishedCards.length && (
+                <p>No admin-published report cards available for this child yet.</p>
+              )}
+              {selectedChildPublishedCards.map((card) => (
+                <div key={`parent-published-${card.id}`} style={{ marginTop: 10, borderTop: '1px solid #eaecf0', paddingTop: 10 }}>
+                  <p><strong>{card.academicYear} • {card.term} • {card.sequence}</strong></p>
+                  <p>Average: {Number(card.average || 0).toFixed(1)}/20 • Rank: {card.rank}/{card.classSize} • Published: {card.publishedAt}</p>
+                  <div className="parent-table-wrap" style={{ marginTop: 8 }}>
+                    <table className="parent-table">
+                      <thead>
+                        <tr>
+                          <th>Subject</th>
+                          <th>Mark</th>
+                          <th>Grade</th>
+                          <th>Coef</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(card.subjects || []).map((subject) => (
+                          <tr key={`${card.id}-${subject.subject}`}>
+                            <td>{subject.subject}</td>
+                            <td>{subject.score}/20</td>
+                            <td>{subject.grade}</td>
+                            <td>{subject.coefficient}</td>
+                          </tr>
+                        ))}
+                        {!(card.subjects || []).length && (
+                          <tr>
+                            <td colSpan="4">No subject details available.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             <div className="parent-table-wrap">
               <table className="parent-table">
                 <thead>
@@ -1861,6 +1935,10 @@ const ParentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {
                 <span>From Admin Offices</span>
                 <strong>{messageStats.admin}</strong>
               </div>
+              <div>
+                <span>In View</span>
+                <strong>{filteredMessages.length}</strong>
+              </div>
             </div>
 
             <div className="parent-results-controls parent-message-controls">
@@ -1899,6 +1977,19 @@ const ParentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {
               </label>
             </div>
 
+            <div className="admin-actions" style={{ marginBottom: 10 }}>
+              <button
+                type="button"
+                className="row-action"
+                onClick={() => {
+                  setMessageSearchQuery('');
+                  setMessageSortBy('recent');
+                }}
+              >
+                Reset Filters
+              </button>
+            </div>
+
             <form className="parent-message-form" onSubmit={sendMessage}>
               <textarea
                 rows={3}
@@ -1909,25 +2000,31 @@ const ParentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {
               <button type="submit"><FaPaperPlane /> Send Message</button>
             </form>
 
-            <ul className="parent-message-list">
-              {filteredMessages.map((item) => (
-                <li key={item.id}>
-                  <div>
-                    <strong>{item.from}</strong>
-                    <p>{item.preview}</p>
-                  </div>
-                  <small>{item.date}</small>
-                </li>
-              ))}
-              {filteredMessages.length === 0 && (
-                <li>
-                  <div>
-                    <strong>No message found</strong>
-                    <p>No message matches your current search.</p>
-                  </div>
-                </li>
-              )}
-            </ul>
+            <div className="parent-table-wrap">
+              <table className="parent-table">
+                <thead>
+                  <tr>
+                    <th>From</th>
+                    <th>Message</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMessages.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.from}</td>
+                      <td>{item.preview}</td>
+                      <td>{item.date}</td>
+                    </tr>
+                  ))}
+                  {!filteredMessages.length && (
+                    <tr>
+                      <td colSpan="3" className="attendance-empty">No message matches your current search.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </section>
         );
 

@@ -1240,6 +1240,13 @@ const AccountantDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () 
 
             {notice && <p className="accountant-notice">{notice}</p>}
 
+            <div className="parent-results-summary accountant-kpi-cards">
+              <div><span>Total Messages</span><strong>{messages.length}</strong></div>
+              <div><span>In View</span><strong>{filteredMessages.length}</strong></div>
+              <div><span>High Priority</span><strong>{messages.filter((item) => item.priority === 'High').length}</strong></div>
+              <div><span>Low Priority</span><strong>{messages.filter((item) => item.priority === 'Low').length}</strong></div>
+            </div>
+
             <div className="parent-results-controls accountant-filter-grid">
               <label>
                 Search Messages
@@ -1267,21 +1274,33 @@ const AccountantDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () 
               <button type="submit">Send Message</button>
             </form>
 
-            <ul className="parent-message-list">
-              {filteredMessages.map((item) => (
-                <li key={item.id}>
-                  <div>
-                    <strong>{item.from}</strong>
-                    <p>{item.preview}</p>
-                    <small>Priority: {item.priority}</small>
-                  </div>
-                  <small>{item.date}</small>
-                </li>
-              ))}
-              {filteredMessages.length === 0 && (
-                <li className="attendance-empty">No message matches the selected criteria.</li>
-              )}
-            </ul>
+            <div className="parent-table-wrap">
+              <table className="parent-table">
+                <thead>
+                  <tr>
+                    <th>From</th>
+                    <th>Message</th>
+                    <th>Priority</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredMessages.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.from}</td>
+                      <td>{item.preview}</td>
+                      <td>{item.priority}</td>
+                      <td>{item.date}</td>
+                    </tr>
+                  ))}
+                  {!filteredMessages.length && (
+                    <tr>
+                      <td colSpan="4" className="attendance-empty">No message matches the selected criteria.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </section>
         );
 

@@ -8,7 +8,7 @@ const DEFAULT_LANDING_SLIDES = [
     id: 'identity',
     title: 'Welcome to EduIgnite School Portal',
     subtitle: 'Empowering learning communities with one connected school dashboard.',
-    image: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1400&q=80'
+    image: '/assets/image.png'
   },
   {
     id: 'motto',

@@ -674,6 +674,10 @@
     padding: 16px;
   }
 
+  .welcome-avatar {
+    order: -1;
+  }
+
   .welcome-text h1 {
     font-size: 1.3rem;
   }

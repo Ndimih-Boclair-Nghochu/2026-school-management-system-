@@ -122,6 +122,13 @@ const LoginPage = ({ onLogin, onCreateAccount, onStartPasswordRecovery, onVerify
     setSuccess('');
   };
 
+  const fillDemoSuperAdminLogin = () => {
+    setMatricule('FDR2026');
+    setPassword('founder123');
+    setError('');
+    setSuccess('');
+  };
+
   const submitForm = (event) => {
     event.preventDefault();
     const id = matricule.trim();
@@ -461,6 +468,7 @@ const LoginPage = ({ onLogin, onCreateAccount, onStartPasswordRecovery, onVerify
             <span>Parent • Matricule: PAR2026 • Password: parent123 • Phone: 677000444</span>
             <span>Accountant • Matricule: ACC2026 • Password: accountant123 • Phone: 677000555</span>
             <span>Admin • Matricule: ADM2026 • Password: admin123 • Phone: 677000666</span>
+            <span>Super Admin • Matricule: FDR2026 • Password: founder123 • Phone: 677000777</span>
             {!isCreateMode && !isForgotMode && (
               <div className="demo-login-actions">
                 <button type="button" onClick={fillDemoTeacherLogin}>Use Teacher Demo</button>
@@ -469,6 +477,7 @@ const LoginPage = ({ onLogin, onCreateAccount, onStartPasswordRecovery, onVerify
                 <button type="button" onClick={fillDemoParentLogin}>Use Parent Demo</button>
                 <button type="button" onClick={fillDemoAccountantLogin}>Use Accountant Demo</button>
                 <button type="button" onClick={fillDemoAdminLogin}>Use Admin Demo</button>
+                <button type="button" onClick={fillDemoSuperAdminLogin}>Use Super Admin Demo</button>
               </div>
             )}
           </div>
