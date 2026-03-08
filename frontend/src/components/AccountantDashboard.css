@@ -336,4 +336,39 @@
   .accountant-chart-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .accountant-grid-form button,
+  .accountant-panel .row-action,
+  .accountant-panel .parent-attendance-actions .row-action {
+    width: 100%;
+  }
+
+  .accountant-mini-list {
+    gap: 8px;
+  }
+
+  .accountant-mini-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .accountant-financial-tab .parent-table {
+    min-width: 520px;
+  }
+}
+
+@media (max-width: 480px) {
+  .accountant-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .accountant-settings-box,
+  .accountant-compose-form,
+  .accountant-highlight-card {
+    padding: 8px;
+  }
+
+  .accountant-financial-tab .parent-table {
+    min-width: 460px;
+  }
 }

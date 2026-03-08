@@ -651,10 +651,20 @@
     gap: 12px;
   }
 
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
   .support-list li {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .support-actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 
   .left-content {
@@ -726,6 +736,19 @@
     min-height: auto;
   }
 
+  .trend-bar {
+    width: 20px;
+  }
+
+  .trend-line {
+    display: none;
+  }
+
+  .chart-row-top {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
   .class-card button {
     width: 100%;
     padding: 10px;
@@ -755,6 +778,17 @@
 
   .recent-messages .message-item {
     margin-bottom: 8px;
+  }
+
+  .announcement-top,
+  .recent-messages .message-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .recent-messages .message-item img {
+    margin-right: 0;
   }
 
   .upcoming-events {
@@ -799,6 +833,7 @@
   .stats-cards {
     gap: 10px;
     margin-bottom: 10px;
+    grid-template-columns: 1fr;
   }
 
   .stats-cards .card {
@@ -846,6 +881,19 @@
 
   .upcoming-events {
     padding: 10px;
+  }
+
+  .trend-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-row-top {
+    font-size: 0.82rem;
+  }
+
+  .announcement-actions button,
+  .support-actions button {
+    width: 100%;
   }
 
   .mini-calendar {
