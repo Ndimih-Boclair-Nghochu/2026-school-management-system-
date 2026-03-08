@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import {
   FaChartLine,
@@ -9,6 +9,7 @@ import {
 import Header from './Header';
 import AccountantSidebar from './AccountantSidebar';
 import EditProfile from './EditProfile';
+import { getPersonalTimetable, TIMETABLE_UPDATED_EVENT } from './timetableData';
 import './TeacherDashboard.css';
 import './ParentDashboard.css';
 import './AccountantDashboard.css';
@@ -230,6 +231,10 @@ const AccountantDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () 
   const [settingsDraft, setSettingsDraft] = useState({ ...DEFAULT_ACCOUNTANT_SETTINGS });
   const [savedSettingsSnapshot, setSavedSettingsSnapshot] = useState({ ...DEFAULT_ACCOUNTANT_SETTINGS });
   const [settingsLastSavedAt, setSettingsLastSavedAt] = useState('Not saved yet');
+  const [personalTimetable, setPersonalTimetable] = useState(() => getPersonalTimetable({
+    name: profile?.name,
+    role: 'Staff'
+  }));
 
   const profileForEdit = useMemo(() => ({
     matricule: profile?.matricule || 'ACC2026',
@@ -238,6 +243,30 @@ const AccountantDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () 
     password: profile?.password || 'accountant123',
     phone: profile?.phone || '677000555'
   }), [profile]);
+
+  useEffect(() => {
+    setPersonalTimetable(getPersonalTimetable({
+      name: profile?.name,
+      role: 'Staff'
+    }));
+  }, [profile?.name]);
+
+  useEffect(() => {
+    const syncTimetable = () => {
+      setPersonalTimetable(getPersonalTimetable({
+        name: profile?.name,
+        role: 'Staff'
+      }));
+    };
+
+    window.addEventListener(TIMETABLE_UPDATED_EVENT, syncTimetable);
+    window.addEventListener('storage', syncTimetable);
+
+    return () => {
+      window.removeEventListener(TIMETABLE_UPDATED_EVENT, syncTimetable);
+      window.removeEventListener('storage', syncTimetable);
+    };
+  }, [profile?.name]);
 
   const selectedAnnouncement = announcements.find((item) => item.id === selectedAnnouncementId) || announcements[0] || null;
 
@@ -1471,6 +1500,24 @@ const AccountantDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () 
                         <span>{item.amount.toLocaleString()} FCFA • {item.date}</span>
                       </li>
                     ))}
+                  </ul>
+                </div>
+
+                <div className="analytics-card">
+                  <div className="section-header"><h2>My Timetable</h2></div>
+                  <ul className="parent-mini-list">
+                    {personalTimetable.slice(0, 4).map((item) => (
+                      <li key={item.id}>
+                        <strong>{item.day} • {item.period}</strong>
+                        <span>{item.activity || '-'}</span>
+                      </li>
+                    ))}
+                    {!personalTimetable.length && (
+                      <li>
+                        <strong>No Schedule</strong>
+                        <span>No personal timetable assigned yet.</span>
+                      </li>
+                    )}
                   </ul>
                 </div>
               </div>

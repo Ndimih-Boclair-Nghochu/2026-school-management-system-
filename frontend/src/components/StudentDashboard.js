@@ -28,6 +28,11 @@ import Announcements from './Announcements';
 import Library from './Library';
 import Messages from './Messages';
 import EditProfile from './EditProfile';
+import {
+  getClassTimetable,
+  groupTimetableByDay,
+  TIMETABLE_UPDATED_EVENT
+} from './timetableData';
 import './StudentDashboard.css';
 import './Materials.css';
 
@@ -192,6 +197,10 @@ const StudentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
   const [supportAmount, setSupportAmount] = useState('');
   const [supporterNumber, setSupporterNumber] = useState('');
   const [supportMessage, setSupportMessage] = useState('');
+  const [studentClassTimetable, setStudentClassTimetable] = useState(() => getClassTimetable({
+    className: profile?.className,
+    section: profile?.section
+  }));
 
   const onlineExams = useMemo(() => [
     {
@@ -280,13 +289,34 @@ const StudentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
     }
   ], []);
 
-  const timetableByDay = useMemo(() => ([
-    { day: 'Monday', sessions: ['08:00 Mathematics', '10:00 Physics', '13:30 ICT'] },
-    { day: 'Tuesday', sessions: ['08:00 English', '09:45 Biology', '13:00 Literature'] },
-    { day: 'Wednesday', sessions: ['08:00 Chemistry', '10:00 History', '14:00 Sports'] },
-    { day: 'Thursday', sessions: ['08:00 Mathematics', '10:00 Civic Education', '13:30 Practical Science'] },
-    { day: 'Friday', sessions: ['08:00 English', '09:45 Physics Lab', '12:30 Club Activities'] }
-  ]), []);
+  const timetableByDay = useMemo(
+    () => groupTimetableByDay(studentClassTimetable),
+    [studentClassTimetable]
+  );
+
+  useEffect(() => {
+    setStudentClassTimetable(getClassTimetable({
+      className: profile?.className,
+      section: profile?.section
+    }));
+  }, [profile?.className, profile?.section]);
+
+  useEffect(() => {
+    const syncTimetable = () => {
+      setStudentClassTimetable(getClassTimetable({
+        className: profile?.className,
+        section: profile?.section
+      }));
+    };
+
+    window.addEventListener(TIMETABLE_UPDATED_EVENT, syncTimetable);
+    window.addEventListener('storage', syncTimetable);
+
+    return () => {
+      window.removeEventListener(TIMETABLE_UPDATED_EVENT, syncTimetable);
+      window.removeEventListener('storage', syncTimetable);
+    };
+  }, [profile?.className, profile?.section]);
 
   const attendanceBySubject = useMemo(() => ([
     { subject: 'Mathematics', present: 22, absent: 1, late: 0 },
@@ -2032,17 +2062,17 @@ const StudentDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
                   </header>
 
                   <div className="student-timetable-sessions">
-                    {day.sessions.map((session) => {
-                      const [time, ...subjectParts] = session.split(' ');
-                      const subject = subjectParts.join(' ');
-
-                      return (
-                        <div key={session} className="student-timetable-session">
-                          <strong>{time}</strong>
-                          <p>{subject}</p>
-                        </div>
-                      );
-                    })}
+                    {day.sessions.length ? day.sessions.map((session) => (
+                      <div key={session.id} className="student-timetable-session">
+                        <strong>{session.period}</strong>
+                        <p>{session.subject}</p>
+                      </div>
+                    )) : (
+                      <div className="student-timetable-session">
+                        <strong>-</strong>
+                        <p>No class timetable assigned.</p>
+                      </div>
+                    )}
                   </div>
                 </article>
               ))}

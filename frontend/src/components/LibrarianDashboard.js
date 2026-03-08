@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { jsPDF } from 'jspdf';
 import {
   FaBook,
@@ -18,6 +18,7 @@ import {
 import Header from './Header';
 import LibrarianSidebar from './LibrarianSidebar';
 import EditProfile from './EditProfile';
+import { getPersonalTimetable, TIMETABLE_UPDATED_EVENT } from './timetableData';
 import './LibrarianDashboard.css';
 
 const buildAvatar = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=2f6feb&color=fff&bold=true`;
@@ -97,6 +98,34 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
     priority: 'Normal',
     note: ''
   });
+  const [personalTimetable, setPersonalTimetable] = useState(() => getPersonalTimetable({
+    name: profile?.name,
+    role: 'Staff'
+  }));
+
+  useEffect(() => {
+    setPersonalTimetable(getPersonalTimetable({
+      name: profile?.name,
+      role: 'Staff'
+    }));
+  }, [profile?.name]);
+
+  useEffect(() => {
+    const syncTimetable = () => {
+      setPersonalTimetable(getPersonalTimetable({
+        name: profile?.name,
+        role: 'Staff'
+      }));
+    };
+
+    window.addEventListener(TIMETABLE_UPDATED_EVENT, syncTimetable);
+    window.addEventListener('storage', syncTimetable);
+
+    return () => {
+      window.removeEventListener(TIMETABLE_UPDATED_EVENT, syncTimetable);
+      window.removeEventListener('storage', syncTimetable);
+    };
+  }, [profile?.name]);
 
   const booksCatalog = useMemo(() => ([
     {
@@ -2692,6 +2721,28 @@ const LibrarianDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () =
                   <span>Automation: Active</span>
                   <span>SMS Reminders: Enabled</span>
                   <span>Data Sync: Healthy</span>
+                </div>
+                <div className="librarian-table-wrap" style={{ marginTop: 14 }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th colSpan="2">My Personal Timetable</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {personalTimetable.slice(0, 4).map((item) => (
+                        <tr key={item.id}>
+                          <td>{item.day} • {item.period}</td>
+                          <td>{item.activity || '-'}</td>
+                        </tr>
+                      ))}
+                      {!personalTimetable.length && (
+                        <tr>
+                          <td colSpan="2">No personal timetable assigned yet.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </article>
             </section>

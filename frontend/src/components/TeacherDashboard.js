@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import MyClasses from './MyClasses';
@@ -17,6 +17,7 @@ import EditProfile from './EditProfile';
 import { FaThList, FaPen, FaCalendarAlt, FaEnvelope } from 'react-icons/fa';
 import './TeacherDashboard.css';
 import { getAcademicTermStructure, useSchoolConfig } from './schoolConfig';
+import { getPersonalTimetable, TIMETABLE_UPDATED_EVENT } from './timetableData';
 
 const TeacherDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => {} }) => {
   const schoolConfig = useSchoolConfig();
@@ -52,6 +53,10 @@ const TeacherDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
   const [announcementMessage, setAnnouncementMessage] = useState('');
   const [activeAnnouncementId, setActiveAnnouncementId] = useState(null);
   const [readNotificationIds, setReadNotificationIds] = useState([]);
+  const [personalTimetable, setPersonalTimetable] = useState(() => getPersonalTimetable({
+    name: profile?.name,
+    role: 'Teacher'
+  }));
 
   const subjectPerformanceData = [
     { subject: 'Mathematics', average: 13.6 },
@@ -136,6 +141,30 @@ const TeacherDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
   }));
 
   const unreadNotificationCount = notificationItems.filter((item) => item.unread).length;
+
+  useEffect(() => {
+    setPersonalTimetable(getPersonalTimetable({
+      name: profile?.name,
+      role: 'Teacher'
+    }));
+  }, [profile?.name]);
+
+  useEffect(() => {
+    const syncTimetable = () => {
+      setPersonalTimetable(getPersonalTimetable({
+        name: profile?.name,
+        role: 'Teacher'
+      }));
+    };
+
+    window.addEventListener(TIMETABLE_UPDATED_EVENT, syncTimetable);
+    window.addEventListener('storage', syncTimetable);
+
+    return () => {
+      window.removeEventListener(TIMETABLE_UPDATED_EVENT, syncTimetable);
+      window.removeEventListener('storage', syncTimetable);
+    };
+  }, [profile?.name]);
 
   const handleNotificationSelect = (notificationId) => {
     setReadNotificationIds((prev) => (
@@ -354,13 +383,22 @@ const TeacherDashboard = ({ profile, onSaveProfile = () => {}, onLogout = () => 
         </section>
 
         <section className="upcoming-events">
-          <h2>Upcoming Events</h2>
+          <h2>My Timetable</h2>
           <ul>
-            <li>
-              <span className="time">11:00 AM - 12:00 PM</span>
-              <span className="event-name">Math Class</span>
-              <button className="join" onClick={() => setActiveView('online-classes')}>Join Now</button>
-            </li>
+            {personalTimetable.slice(0, 4).map((item) => (
+              <li key={item.id}>
+                <span className="time">{item.day} • {item.period}</span>
+                <span className="event-name">{item.activity || '-'}</span>
+                <button className="join" onClick={() => setActiveView('calendar')}>View</button>
+              </li>
+            ))}
+            {!personalTimetable.length && (
+              <li>
+                <span className="time">No Schedule</span>
+                <span className="event-name">No personal timetable assigned yet.</span>
+                <button className="join" onClick={() => setActiveView('calendar')}>Open Calendar</button>
+              </li>
+            )}
           </ul>
           <div className="mini-calendar">
             {/* placeholder calendar */}

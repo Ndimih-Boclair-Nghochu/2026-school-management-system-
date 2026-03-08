@@ -132,6 +132,34 @@ export const updateStudentPlatformFee = (matricule, paid) => {
   return next.find((item) => item.matricule.toUpperCase() === normalizedMatricule) || null;
 };
 
+export const updateStudentEnrollmentByMatricule = (matricule, updates = {}) => {
+  const records = getStudentEnrollments();
+  const normalizedMatricule = normalizeText(matricule).toUpperCase();
+
+  let updatedRecord = null;
+
+  const next = records.map((item) => {
+    if (item.matricule.toUpperCase() !== normalizedMatricule) {
+      return item;
+    }
+
+    updatedRecord = normalizeEnrollment({
+      ...item,
+      ...updates,
+      matricule: item.matricule
+    });
+
+    return updatedRecord;
+  });
+
+  if (!updatedRecord) {
+    return null;
+  }
+
+  saveStudentEnrollments(next);
+  return updatedRecord;
+};
+
 export const createStudentAccountFromMatricule = (matricule, password) => {
   const normalizedMatricule = normalizeText(matricule).toUpperCase();
   const safePassword = normalizeText(password);
