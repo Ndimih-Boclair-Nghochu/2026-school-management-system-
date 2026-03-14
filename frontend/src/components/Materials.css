@@ -1,0 +1,277 @@
+.materials-root {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.materials-header {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.materials-header h2 {
+  margin: 0 0 4px;
+}
+
+.materials-header p {
+  margin: 0;
+  color: #667085;
+}
+
+.materials-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+
+.materials-card h3 {
+  margin: 0 0 10px;
+}
+
+.upload-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #344054;
+}
+
+.field input,
+.field select {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 0.9rem;
+}
+
+.file-upload-field small {
+  color: #667085;
+  font-size: 0.76rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.materials-tools {
+  display: grid;
+  grid-template-columns: 1.3fr repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.materials-tools input,
+.materials-tools select {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.88rem;
+}
+
+.materials-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.material-item-card {
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  padding: 11px;
+  background: #fcfcfd;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.material-item-card.unpublished {
+  border-style: dashed;
+  opacity: 0.88;
+}
+
+.material-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.format-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1570ef, #2e90fa);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+.material-top h4 {
+  margin: 0 0 3px;
+  font-size: 0.95rem;
+  color: #101828;
+}
+
+.material-top p {
+  margin: 0;
+  color: #667085;
+  font-size: 0.8rem;
+}
+
+.meta-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.meta-row span {
+  background: #f2f4f7;
+  color: #475467;
+  font-size: 0.74rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.status-chip.live {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.status-chip.muted {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.teacher-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.teacher-row img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #d0d5dd;
+}
+
+.teacher-row strong {
+  display: block;
+  color: #101828;
+  font-size: 0.84rem;
+}
+
+.teacher-row p {
+  margin: 1px 0 0;
+  color: #667085;
+  font-size: 0.74rem;
+}
+
+.file-name {
+  margin: 0;
+  color: #475467;
+  font-size: 0.78rem;
+  word-break: break-word;
+}
+
+.material-actions {
+  margin-top: auto;
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.primary-btn,
+.secondary-btn,
+.danger-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background: #1570ef;
+  color: #fff;
+}
+
+.primary-btn:hover {
+  background: #175cd3;
+}
+
+.secondary-btn {
+  background: #eef2f6;
+  color: #344054;
+  width: 100%;
+}
+
+.secondary-btn:hover {
+  background: #e4e7ec;
+}
+
+.danger-btn {
+  background: #fee4e2;
+  color: #b42318;
+}
+
+.danger-btn:hover {
+  background: #fecdca;
+}
+
+.empty {
+  color: #667085;
+  margin: 4px 0;
+}
+
+@media (max-width: 1024px) {
+  .upload-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .materials-tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .materials-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .upload-grid,
+  .materials-tools,
+  .materials-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .primary-btn,
+  .secondary-btn,
+  .danger-btn {
+    width: 100%;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+}

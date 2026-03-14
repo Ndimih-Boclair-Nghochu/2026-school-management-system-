@@ -1,0 +1,462 @@
+/* Clean header stylesheet to avoid previous corrupted content */
+.header {
+  margin-left: 240px;
+  height: 60px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  border-bottom: 1px solid #eee;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+
+.header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.menu-toggle {
+  display: none;
+  border: none;
+  background: transparent;
+  color: #344054;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.school-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.school-brand-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: #eef4ff;
+  flex-shrink: 0;
+}
+
+.school-brand h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1d2939;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.language-toggle {
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  color: #1d2939;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-right: 4px;
+}
+
+.language-toggle:hover {
+  background: #f5f9ff;
+  border-color: #b2ddff;
+}
+
+.header-right .icon {
+  font-size: 1rem;
+  color: #555;
+  margin: 0 10px;
+  cursor: pointer;
+}
+
+.header-right .notification {
+  position: relative;
+}
+
+.notification-trigger {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.header-right .badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #ff4d4f;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 0.6rem;
+  padding: 2px 5px;
+}
+
+.notification-menu {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  width: 300px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 20;
+  overflow: hidden;
+}
+
+.notification-menu-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.notification-menu-head button {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.notification-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.notification-menu li button {
+  width: 100%;
+  border: none;
+  background: #fff;
+  text-align: left;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.notification-menu li button.unread {
+  background: #f0f7ff;
+}
+
+.notification-menu li button span {
+  color: #222;
+  font-size: 0.9rem;
+}
+
+.notification-menu li button small {
+  color: #888;
+  font-size: 0.75rem;
+}
+
+.notification-menu li.empty {
+  padding: 14px 12px;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.view-all-notifications {
+  width: 100%;
+  border: none;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+  padding: 10px 12px;
+  color: #2563eb;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  margin-left: 15px;
+}
+
+.profile .avatar {
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  display: block;
+}
+
+/* adjust on larger screens */
+@media (min-width: 1024px) {
+  .profile .avatar {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .profile .avatar {
+    width: 48px;
+    height: 48px;
+  }
+}
+.profile .name {
+  margin-left: 8px;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.logout-btn {
+  margin-left: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #fef3f2;
+  color: #b42318;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #fee4e2;
+}
+
+/* responsive header adjustments */
+@media (max-width: 1024px) {
+  .header {
+    margin-left: 72px; /* match collapsed sidebar */
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    margin-left: 0;
+    padding: 0 16px;
+    height: 56px;
+    flex-wrap: wrap;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .header h2 {
+    font-size: 1.1rem;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .school-brand-logo {
+    width: 30px;
+    height: 30px;
+  }
+
+  .header-right {
+    gap: 4px;
+  }
+
+  .language-toggle {
+    padding: 5px 8px;
+    font-size: 0.72rem;
+    margin-right: 2px;
+  }
+
+  .header-right .icon {
+    margin: 0 8px;
+    font-size: 1.1rem;
+    min-width: 24px;
+    text-align: center;
+  }
+
+  .profile .name {
+    display: none;
+  }
+
+  .logout-btn {
+    padding: 7px 10px;
+    font-size: 0.78rem;
+    margin-left: 6px;
+  }
+
+  .profile .avatar {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: 0 12px;
+  }
+
+  .header h2 {
+    font-size: 1rem;
+  }
+
+  .school-brand h2 {
+    display: none;
+  }
+
+  .school-brand-logo {
+    width: 28px;
+    height: 28px;
+  }
+
+  .header-right .icon {
+    margin: 0 6px;
+  }
+
+  .language-toggle {
+    padding: 4px 7px;
+    font-size: 0.7rem;
+  }
+
+  .logout-btn {
+    font-size: 0.74rem;
+    padding: 6px 8px;
+  }
+
+  .notification-menu {
+    width: 260px;
+    right: -20px;
+  }
+}
+
+/* Large screens (1920px and above) */
+@media (min-width: 1920px) {
+  .header {
+    height: 80px;
+    padding: 0 32px;
+    margin-left: 280px;
+  }
+
+  .header h2 {
+    font-size: 1.8rem;
+  }
+
+  .school-brand-logo {
+    width: 46px;
+    height: 46px;
+  }
+
+  .header-right {
+    gap: 20px;
+  }
+
+  .header-right .icon {
+    font-size: 1.4rem;
+    margin: 0 12px;
+  }
+
+  .profile .avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .profile .name {
+    font-size: 1.1rem;
+    margin-left: 12px;
+  }
+
+  .menu-toggle {
+    font-size: 1.6rem;
+  }
+}
+
+/* Extra large screens (2560px and above) */
+@media (min-width: 2560px) {
+  .header {
+    height: 100px;
+    padding: 0 48px;
+  }
+
+  .header h2 {
+    font-size: 2.2rem;
+  }
+
+  .school-brand-logo {
+    width: 52px;
+    height: 52px;
+  }
+
+  .header-right {
+    gap: 28px;
+  }
+
+  .header-right .icon {
+    font-size: 1.8rem;
+  }
+
+  .profile .avatar {
+    width: 56px;
+    height: 56px;
+  }
+
+  .profile .name {
+    font-size: 1.3rem;
+  }
+}
+
+/* 4K and ultra-wide screens (3840px and above) */
+@media (min-width: 3840px) {
+  .header {
+    height: 120px;
+    padding: 0 64px;
+  }
+
+  .header h2 {
+    font-size: 2.8rem;
+  }
+
+  .school-brand-logo {
+    width: 58px;
+    height: 58px;
+  }
+
+  .header-right {
+    gap: 36px;
+  }
+
+  .header-right .icon {
+    font-size: 2.2rem;
+  }
+
+  .profile .avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .profile .name {
+    font-size: 1.5rem;
+  }
+}

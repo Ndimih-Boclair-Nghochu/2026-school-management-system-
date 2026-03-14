@@ -1,0 +1,11 @@
+/* global styles */
+body, html, #root {
+  height: 100%;
+  margin: 0;
+  background: #f0f2f5;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+}

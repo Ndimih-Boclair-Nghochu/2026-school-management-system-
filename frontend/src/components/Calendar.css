@@ -1,0 +1,405 @@
+.calendar-root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.calendar-header {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.calendar-header h2 {
+  margin: 0 0 5px;
+}
+
+.calendar-header p {
+  margin: 0;
+  color: #667085;
+}
+
+.calendar-kpis {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.calendar-kpis span {
+  background: #f2f4f7;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  color: #475467;
+}
+
+.calendar-kpis strong {
+  color: #101828;
+}
+
+.calendar-tools {
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 8px;
+}
+
+.admin-only-note {
+  background: #f8fafc;
+  border: 1px dashed #b2ddff;
+  color: #175cd3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 0.83rem;
+}
+
+.calendar-tools input,
+.calendar-tools select,
+.form-grid input,
+.form-grid select,
+.form-grid textarea {
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 0.88rem;
+}
+
+.calendar-layout {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 12px;
+}
+
+.calendar-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+}
+
+.month-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.month-head h3 {
+  margin: 0;
+  color: #1d2939;
+  font-size: 1rem;
+}
+
+.month-head button,
+.primary-btn,
+.event-top button {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.month-head button {
+  background: #eef2f6;
+  color: #344054;
+}
+
+.month-head button:hover,
+.event-top button:hover {
+  background: #e4e7ec;
+}
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.weekdays span {
+  text-align: center;
+  font-size: 0.76rem;
+  color: #667085;
+  font-weight: 600;
+}
+
+.days-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.day-cell {
+  min-height: 70px;
+  border: 1px solid #e4e7ec;
+  border-radius: 8px;
+  padding: 6px;
+  background: #fff;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.day-cell.blank {
+  border: none;
+  background: transparent;
+}
+
+.day-cell strong {
+  font-size: 0.8rem;
+  color: #1d2939;
+}
+
+.day-cell.today {
+  border-color: #84caff;
+}
+
+.day-cell.selected {
+  background: #eff8ff;
+  border-color: #2e90fa;
+}
+
+.event-count {
+  font-size: 0.68rem;
+  color: #175cd3;
+  background: #d1e9ff;
+  border-radius: 999px;
+  padding: 2px 6px;
+  align-self: flex-start;
+}
+
+.event-panel h3,
+.add-event-card h3,
+.upcoming-card h3 {
+  margin: 0 0 10px;
+}
+
+.event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.event-item {
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  padding: 9px;
+  background: #fcfcfd;
+}
+
+.event-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.managed-by {
+  background: #f2f4f7;
+  color: #475467;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.event-top button {
+  background: #f2f4f7;
+  color: #344054;
+}
+
+.event-item h4 {
+  margin: 0 0 4px;
+  color: #101828;
+  font-size: 0.9rem;
+}
+
+.event-item p {
+  margin: 0 0 6px;
+  color: #667085;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.event-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.event-meta span {
+  background: #f2f4f7;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  color: #475467;
+}
+
+.event-tag {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.event-tag.academic {
+  background: #eef4ff;
+  color: #175cd3;
+}
+
+.event-tag.exam {
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.event-tag.meeting {
+  background: #f9f5ff;
+  color: #6941c6;
+}
+
+.event-tag.sports {
+  background: #ecfdf3;
+  color: #027a48;
+}
+
+.event-tag.holiday {
+  background: #fffaeb;
+  color: #b54708;
+}
+
+.event-tag.administration {
+  background: #f2f4f7;
+  color: #475467;
+}
+
+.calendar-bottom {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #344054;
+  font-size: 0.81rem;
+  font-weight: 600;
+}
+
+.form-grid label.full {
+  grid-column: 1 / -1;
+}
+
+.primary-btn {
+  background: #1570ef;
+  color: #fff;
+}
+
+.primary-btn:hover {
+  background: #175cd3;
+}
+
+.upcoming-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.upcoming-card li {
+  border: 1px solid #eaecf0;
+  border-radius: 10px;
+  padding: 9px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fcfcfd;
+}
+
+.upcoming-card li strong {
+  color: #101828;
+  font-size: 0.86rem;
+}
+
+.upcoming-card li p {
+  margin: 4px 0 0;
+  color: #667085;
+  font-size: 0.77rem;
+}
+
+.upcoming-meta {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.upcoming-meta span {
+  font-size: 0.75rem;
+  color: #667085;
+}
+
+.empty {
+  color: #667085;
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .calendar-layout,
+  .calendar-bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .calendar-header {
+    flex-direction: column;
+  }
+
+  .calendar-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .days-grid {
+    gap: 4px;
+  }
+
+  .day-cell {
+    min-height: 56px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .upcoming-card li {
+    flex-direction: column;
+  }
+
+  .upcoming-meta {
+    text-align: left;
+  }
+}
