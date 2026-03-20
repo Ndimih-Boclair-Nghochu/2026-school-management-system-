@@ -22,7 +22,7 @@ const studentTabs = [
   { key: 'dashboard', label: 'Dashboard', icon: FaTachometerAlt },
   { key: 'my-subjects', label: 'My Subjects', icon: FaBookOpen },
   { key: 'assignments', label: 'Assignments', icon: FaTasks },
-  { key: 'online-classes', label: 'Online Classes', icon: FaVideo },
+  // Removed 'online-classes' tab
   { key: 'online-exams', label: 'Online Exams', icon: FaLaptopCode },
   { key: 'timetable', label: 'Timetable', icon: FaCalendarAlt },
   { key: 'attendance', label: 'Attendance', icon: FaClipboardList },
