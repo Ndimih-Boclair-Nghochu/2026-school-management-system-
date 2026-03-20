@@ -308,10 +308,14 @@ function App() {
     });
   };
 
+<<<<<<< HEAD
   const studentDashboardLocked = activeRole === 'student' && !userProfile.platformFeePaid;
   const dashboardLockMessage = studentDashboardLocked
     ? 'Your dashboard is locked until your platform fee is confirmed by the school admin.'
     : '';
+=======
+  // Removed dashboard lock restriction for students
+>>>>>>> e921754 (Remove admin restriction for student dashboard access)
 
   if (!isAuthenticated) {
     return (
@@ -330,6 +334,7 @@ function App() {
       <SchoolLanding
         profile={userProfile}
         role={activeRole}
+<<<<<<< HEAD
         canOpenDashboard={!studentDashboardLocked}
         dashboardBlockedReason={dashboardLockMessage}
         onOpenDashboard={() => {
@@ -337,6 +342,11 @@ function App() {
             alert(dashboardLockMessage);
             return;
           }
+=======
+        canOpenDashboard={true}
+        dashboardBlockedReason={''}
+        onOpenDashboard={() => {
+>>>>>>> e921754 (Remove admin restriction for student dashboard access)
           setShowLandingPage(false);
         }}
         onLogout={() => {
